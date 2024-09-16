@@ -6,14 +6,14 @@ cbf = "0.13"
 invui = "1.37"
 jgrapht = "1.5.2"
 kotlin = "2.0.20"
-kotlinx-coroutines = "1.8.1"
+kotlinx-coroutines = "1.9.0"
 ktor = "2.3.12"
 paper = "1.21.1-R0.1-SNAPSHOT"
 paperweight = "1.7.2"
 xenondevs-commons = "1.17"
 
 [libraries]
-awssdk-s3 = { group = "software.amazon.awssdk", name = "s3", version = "2.27.21" }
+awssdk-s3 = { group = "software.amazon.awssdk", name = "s3", version = "2.28.1" }
 bstats = { group = "xyz.xenondevs.bstats", name = "bstats-bukkit", version = "3.0.1" }
 bytbase-runtime = { group = "xyz.xenondevs.bytebase", name = "ByteBase-Runtime", version = "0.4.8" }
 caffeine = { group = "com.github.ben-manes.caffeine", name = "caffeine", version = "3.1.8" }

@@ -12,7 +12,6 @@ import xyz.xenondevs.commons.collections.mapToArray
 import xyz.xenondevs.nova.LOGGER
 import xyz.xenondevs.nova.NOVA
 import xyz.xenondevs.nova.Nova
-import xyz.xenondevs.nova.initialize.DisableFun
 import xyz.xenondevs.nova.initialize.InitFun
 import xyz.xenondevs.nova.initialize.InternalInit
 import xyz.xenondevs.nova.initialize.InternalInitStage
@@ -21,6 +20,7 @@ import xyz.xenondevs.nova.patch.impl.FieldFilterPatch
 import xyz.xenondevs.nova.patch.impl.block.BlockBehaviorPatches
 import xyz.xenondevs.nova.patch.impl.block.BlockMigrationPatches
 import xyz.xenondevs.nova.patch.impl.block.DisableBackingStateLogicPatch
+import xyz.xenondevs.nova.patch.impl.block.EarlyBlockPlaceEventPatch
 import xyz.xenondevs.nova.patch.impl.block.FluidFlowPatch
 import xyz.xenondevs.nova.patch.impl.block.TripwireLogicPatch
 import xyz.xenondevs.nova.patch.impl.bossbar.BossBarOriginPatch
@@ -65,7 +65,7 @@ internal object Patcher {
             BroadcastPacketPatch, EventPreventionPatch, WearablePatch, BossBarOriginPatch,
             FakePlayerLastHurtPatch, BlockBehaviorPatches, ChunkSchedulingPatch, DisableBackingStateLogicPatch,
             ItemStackDataComponentsPatch, EnchantmentPatches, TagsPatch, RepairPatches, BlockMigrationPatches,
-            TripwireLogicPatch, FluidFlowPatch
+            TripwireLogicPatch, FluidFlowPatch, EarlyBlockPlaceEventPatch
         ).filter(Transformer::shouldTransform).toSet()
     }
     
@@ -178,12 +178,6 @@ internal object Patcher {
     private fun insertPatchedLoader() {
         val spigotLoader = Bukkit::class.java.classLoader
         ReflectionUtils.setFinalField(CLASS_LOADER_PARENT_FIELD, spigotLoader, PatchedClassLoader())
-    }
-    
-    @DisableFun
-    private fun removePatchedLoader() {
-        val spigotLoader = Bukkit::class.java.classLoader
-        ReflectionUtils.setFinalField(CLASS_LOADER_PARENT_FIELD, spigotLoader, spigotLoader.parent.parent)
     }
     
 }

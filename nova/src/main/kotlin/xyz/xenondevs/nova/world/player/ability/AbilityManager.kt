@@ -1,6 +1,6 @@
 package xyz.xenondevs.nova.world.player.ability
 
-import net.minecraft.resources.ResourceLocation
+import net.kyori.adventure.key.Key
 import org.bukkit.Bukkit
 import org.bukkit.NamespacedKey
 import org.bukkit.entity.Player
@@ -9,25 +9,21 @@ import org.bukkit.event.Listener
 import org.bukkit.event.player.PlayerJoinEvent
 import org.bukkit.event.player.PlayerQuitEvent
 import xyz.xenondevs.commons.collections.removeIf
-import xyz.xenondevs.nova.NOVA
-import xyz.xenondevs.nova.addon.AddonsInitializer
-import xyz.xenondevs.nova.serialization.persistentdata.get
-import xyz.xenondevs.nova.serialization.persistentdata.set
 import xyz.xenondevs.nova.initialize.DisableFun
 import xyz.xenondevs.nova.initialize.InitFun
 import xyz.xenondevs.nova.initialize.InternalInit
 import xyz.xenondevs.nova.initialize.InternalInitStage
 import xyz.xenondevs.nova.registry.NovaRegistries.ABILITY_TYPE
+import xyz.xenondevs.nova.serialization.persistentdata.get
+import xyz.xenondevs.nova.serialization.persistentdata.set
+import xyz.xenondevs.nova.util.getValue
 import xyz.xenondevs.nova.util.registerEvents
 import xyz.xenondevs.nova.util.runTaskTimer
 import kotlin.collections.set
 
-private val ABILITIES_KEY = NamespacedKey(NOVA, "abilities1")
+private val ABILITIES_KEY = NamespacedKey("nova", "abilities1")
 
-@InternalInit(
-    stage = InternalInitStage.POST_WORLD,
-    dependsOn = [AddonsInitializer::class]
-)
+@InternalInit(stage = InternalInitStage.POST_WORLD)
 object AbilityManager : Listener {
     
     internal val activeAbilities = HashMap<Player, HashMap<AbilityType<*>, Ability>>()
@@ -96,10 +92,10 @@ object AbilityManager : Listener {
     
     private fun handlePlayerJoin(player: Player) {
         val dataContainer = player.persistentDataContainer
-        val ids = dataContainer.get<List<ResourceLocation>>(ABILITIES_KEY)
+        val ids = dataContainer.get<List<Key>>(ABILITIES_KEY)
         
         ids?.forEach {
-            val abilityType = ABILITY_TYPE[it]
+            val abilityType = ABILITY_TYPE.getValue(it)
             if (abilityType != null)
                 giveAbility(player, abilityType)
         }

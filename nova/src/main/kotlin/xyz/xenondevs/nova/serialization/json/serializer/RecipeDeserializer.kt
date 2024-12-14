@@ -3,7 +3,7 @@ package xyz.xenondevs.nova.serialization.json.serializer
 import com.google.gson.JsonArray
 import com.google.gson.JsonElement
 import com.google.gson.JsonObject
-import net.minecraft.resources.ResourceLocation
+import net.kyori.adventure.key.Key
 import org.bukkit.Bukkit
 import org.bukkit.Material
 import org.bukkit.NamespacedKey
@@ -27,12 +27,11 @@ import xyz.xenondevs.commons.gson.getIntOrNull
 import xyz.xenondevs.commons.gson.getString
 import xyz.xenondevs.commons.gson.getStringOrNull
 import xyz.xenondevs.commons.gson.isString
-import xyz.xenondevs.nova.serialization.json.serializer.RecipeDeserializer.Companion.getRecipeId
 import xyz.xenondevs.nova.serialization.json.serializer.RecipeDeserializer.Companion.getRecipeKey
 import xyz.xenondevs.nova.serialization.json.serializer.RecipeDeserializer.Companion.parseRecipeChoice
 import xyz.xenondevs.nova.util.item.ItemUtils
 import xyz.xenondevs.nova.util.item.ItemUtils.getItemStack
-import xyz.xenondevs.nova.util.namespacedKey
+import xyz.xenondevs.nova.util.toNamespacedKey
 import java.io.File
 import kotlin.collections.component1
 import kotlin.collections.component2
@@ -71,11 +70,22 @@ interface RecipeDeserializer<T> {
             return ItemUtils.getRecipeChoice(names)
         }
         
-        fun getRecipeKey(file: File): NamespacedKey =
-            getRecipeId(file).namespacedKey
-        
-        fun getRecipeId(file: File): ResourceLocation =
-            ResourceLocation.fromNamespaceAndPath("nova", "${file.parentFile.name}.${file.nameWithoutExtension}")
+        /**
+         * Generates a [NamespacedKey] for a recipe file, assuming that is located under
+         * `plugins/<addon name>/recipes/<recipe type namespace>/<recipe type name>/<recipe name>.json`, which
+         * would generate the following key: `<addon id>:<recipe type namespace>/<recipe type name>/<recipe name>`
+         */
+        fun getRecipeKey(file: File): NamespacedKey {
+            val relativePathString = file.relativeTo(File("plugins/")).invariantSeparatorsPath
+            val addonId = relativePathString.substringBefore('/').lowercase()
+            return NamespacedKey(
+                addonId,
+                relativePathString
+                    .substringAfter('/') // Remove the addon id
+                    .substringAfter('/') // remove "recipes"
+                    .substringBeforeLast('.') // remove extension
+            )
+        }
         
     }
     
@@ -196,10 +206,10 @@ abstract class ConversionRecipeDeserializer<T> : RecipeDeserializer<T> {
         
         val time = json.getIntOrNull("time") ?: json.getIntOrNull("cookingTime")!! // legacy support
         
-        return createRecipe(json, getRecipeId(file), inputChoice, result, time)
+        return createRecipe(json, getRecipeKey(file), inputChoice, result, time)
     }
     
-    abstract fun createRecipe(json: JsonObject, id: ResourceLocation, input: RecipeChoice, result: ItemStack, time: Int): T
+    abstract fun createRecipe(json: JsonObject, key: Key, input: RecipeChoice, result: ItemStack, time: Int): T
     
 }
 
@@ -208,10 +218,10 @@ internal abstract class CookingRecipeDeserializer<T : CookingRecipe<T>>(
     val recipeConstructor: (id: NamespacedKey, result: ItemStack, input: RecipeChoice, experience: Float, time: Int) -> T
 ) : ConversionRecipeDeserializer<T>() {
     
-    override fun createRecipe(json: JsonObject, id: ResourceLocation, input: RecipeChoice, result: ItemStack, time: Int): T {
+    override fun createRecipe(json: JsonObject, key: Key, input: RecipeChoice, result: ItemStack, time: Int): T {
         val experience = json.getFloatOrNull("experience")!!
         
-        val recipe = recipeConstructor(id.namespacedKey, result, input, experience, time)
+        val recipe = recipeConstructor(key.toNamespacedKey(), result, input, experience, time)
         
         val category = json.getStringOrNull("category")
             ?.let { CookingBookCategory.valueOf(it.uppercase()) }

@@ -9,18 +9,6 @@ import xyz.xenondevs.cbf.adapter.impl.EnumBinaryAdapter
 import xyz.xenondevs.cbf.instancecreator.InstanceCreator
 import xyz.xenondevs.cbf.security.CBFSecurityManager
 import xyz.xenondevs.commons.reflection.classifierClass
-import xyz.xenondevs.nova.serialization.cbf.NamespacedCompound.NamespacedCompoundBinaryAdapter
-import xyz.xenondevs.nova.serialization.cbf.adapter.BlockPosBinaryAdapter
-import xyz.xenondevs.nova.serialization.cbf.adapter.BukkitItemStackBinaryAdapter
-import xyz.xenondevs.nova.serialization.cbf.adapter.ColorBinaryAdapter
-import xyz.xenondevs.nova.serialization.cbf.adapter.ItemFilterBinaryAdapter
-import xyz.xenondevs.nova.serialization.cbf.adapter.LocationBinaryAdapter
-import xyz.xenondevs.nova.serialization.cbf.adapter.MojangItemStackBinaryAdapter
-import xyz.xenondevs.nova.serialization.cbf.adapter.NamespacedIdBinaryAdapter
-import xyz.xenondevs.nova.serialization.cbf.adapter.NamespacedKeyBinaryAdapter
-import xyz.xenondevs.nova.serialization.cbf.adapter.ResourceLocationBinaryAdapter
-import xyz.xenondevs.nova.serialization.cbf.adapter.TableBinaryAdapter
-import xyz.xenondevs.nova.serialization.cbf.adapter.VirtualInventoryBinaryAdapter
 import xyz.xenondevs.nova.registry.NovaRegistries.ABILITY_TYPE
 import xyz.xenondevs.nova.registry.NovaRegistries.ATTACHMENT_TYPE
 import xyz.xenondevs.nova.registry.NovaRegistries.BLOCK
@@ -29,9 +17,22 @@ import xyz.xenondevs.nova.registry.NovaRegistries.NETWORK_TYPE
 import xyz.xenondevs.nova.registry.NovaRegistries.RECIPE_TYPE
 import xyz.xenondevs.nova.registry.NovaRegistries.TOOL_CATEGORY
 import xyz.xenondevs.nova.registry.NovaRegistries.TOOL_TIER
-import xyz.xenondevs.nova.registry.RegistryBinaryAdapter
+import xyz.xenondevs.nova.serialization.cbf.NamespacedCompound.NamespacedCompoundBinaryAdapter
+import xyz.xenondevs.nova.serialization.cbf.adapter.BlockPosBinaryAdapter
+import xyz.xenondevs.nova.serialization.cbf.adapter.BukkitItemStackBinaryAdapter
+import xyz.xenondevs.nova.serialization.cbf.adapter.ColorBinaryAdapter
+import xyz.xenondevs.nova.serialization.cbf.adapter.ItemFilterBinaryAdapter
+import xyz.xenondevs.nova.serialization.cbf.adapter.KeyBinaryAdapter
+import xyz.xenondevs.nova.serialization.cbf.adapter.LocationBinaryAdapter
+import xyz.xenondevs.nova.serialization.cbf.adapter.MojangItemStackBinaryAdapter
+import xyz.xenondevs.nova.serialization.cbf.adapter.NamespacedIdBinaryAdapter
+import xyz.xenondevs.nova.serialization.cbf.adapter.NamespacedKeyBinaryAdapter
+import xyz.xenondevs.nova.serialization.cbf.adapter.RegistryBinaryAdapter
+import xyz.xenondevs.nova.serialization.cbf.adapter.ResourceLocationBinaryAdapter
+import xyz.xenondevs.nova.serialization.cbf.adapter.TableBinaryAdapter
+import xyz.xenondevs.nova.serialization.cbf.adapter.VirtualInventoryBinaryAdapter
+import xyz.xenondevs.nova.serialization.cbf.adapter.byNameBinaryAdapter
 import xyz.xenondevs.nova.world.block.tileentity.network.type.NetworkConnectionType
-import xyz.xenondevs.nova.util.byNameBinaryAdapter
 import kotlin.reflect.KClass
 import kotlin.reflect.KType
 
@@ -45,6 +46,7 @@ internal object CBFAdapters {
         registerBinaryAdapter(NamespacedKeyBinaryAdapter)
         registerBinaryAdapter(NamespacedIdBinaryAdapter)
         registerBinaryAdapter(ResourceLocationBinaryAdapter)
+        registerBinaryAdapter(KeyBinaryAdapter)
         registerBinaryAdapter(VirtualInventoryBinaryAdapter)
         registerBinaryAdapter(BlockPosBinaryAdapter)
         registerBinaryAdapter(MojangItemStackBinaryAdapter)

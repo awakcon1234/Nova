@@ -12,9 +12,11 @@ import org.bukkit.event.player.PlayerResourcePackStatusEvent
 import org.bukkit.event.player.PlayerResourcePackStatusEvent.Status
 import org.bukkit.plugin.Plugin
 import org.bukkit.scheduler.BukkitTask
-import xyz.xenondevs.inventoryaccess.util.ReflectionRegistry
-import xyz.xenondevs.nova.NOVA
+import xyz.xenondevs.invui.internal.util.ReflectionRegistry
+import xyz.xenondevs.nova.Nova
 import xyz.xenondevs.nova.config.MAIN_CONFIG
+import xyz.xenondevs.nova.config.entry
+import xyz.xenondevs.nova.config.node
 import xyz.xenondevs.nova.initialize.DisableFun
 import xyz.xenondevs.nova.initialize.InitFun
 import xyz.xenondevs.nova.initialize.InternalInit
@@ -354,13 +356,13 @@ object BossBarOverlayManager : Listener, PacketListener {
         var plugin: Plugin? = null
         StackWalker.getInstance(StackWalker.Option.RETAIN_CLASS_REFERENCE).forEach {
             val classLoader = it.declaringClass.classLoader
-            if (classLoader?.javaClass == ReflectionRegistry.PLUGIN_CLASS_LOADER_CLASS) {
+            if (classLoader?.javaClass == ReflectionRegistry.PLUGIN_CLASS_LOADER_CLASS) { // TODO: paper plugin class loader
                 plugin = ReflectionRegistry.PLUGIN_CLASS_LOADER_PLUGIN_FIELD.get(classLoader) as Plugin
             }
         }
         
-        if (plugin != null && plugin != NOVA) {
-            trackedOrigins[event.id] = BarOrigin.Plugin(plugin!!)
+        if (plugin != null && plugin != Nova) {
+            trackedOrigins[event.id] = BarOrigin.Plugin(plugin)
         }
     }
     

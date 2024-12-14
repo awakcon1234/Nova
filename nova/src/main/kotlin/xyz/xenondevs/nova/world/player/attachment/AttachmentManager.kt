@@ -2,7 +2,7 @@
 
 package xyz.xenondevs.nova.world.player.attachment
 
-import net.minecraft.resources.ResourceLocation
+import net.kyori.adventure.key.Key
 import org.bukkit.Bukkit
 import org.bukkit.NamespacedKey
 import org.bukkit.entity.Player
@@ -14,10 +14,6 @@ import org.bukkit.event.player.PlayerQuitEvent
 import org.bukkit.event.player.PlayerRespawnEvent
 import org.bukkit.event.player.PlayerTeleportEvent
 import xyz.xenondevs.nova.LOGGER
-import xyz.xenondevs.nova.NOVA
-import xyz.xenondevs.nova.addon.AddonsInitializer
-import xyz.xenondevs.nova.serialization.persistentdata.get
-import xyz.xenondevs.nova.serialization.persistentdata.set
 import xyz.xenondevs.nova.initialize.DisableFun
 import xyz.xenondevs.nova.initialize.InitFun
 import xyz.xenondevs.nova.initialize.InternalInit
@@ -27,21 +23,21 @@ import xyz.xenondevs.nova.network.event.PacketListener
 import xyz.xenondevs.nova.network.event.clientbound.ClientboundSetPassengersPacketEvent
 import xyz.xenondevs.nova.network.event.registerPacketListener
 import xyz.xenondevs.nova.registry.NovaRegistries.ATTACHMENT_TYPE
+import xyz.xenondevs.nova.serialization.persistentdata.get
+import xyz.xenondevs.nova.serialization.persistentdata.set
+import xyz.xenondevs.nova.util.getValue
 import xyz.xenondevs.nova.util.registerEvents
 import xyz.xenondevs.nova.util.runTaskLater
 import xyz.xenondevs.nova.util.runTaskTimer
 import kotlin.collections.set
 
-private val ATTACHMENTS_KEY = NamespacedKey(NOVA, "attachments1")
+private val ATTACHMENTS_KEY = NamespacedKey("nova", "attachments1")
 
-@InternalInit(
-    stage = InternalInitStage.POST_WORLD,
-    dependsOn = [AddonsInitializer::class]
-)
+@InternalInit(stage = InternalInitStage.POST_WORLD)
 object AttachmentManager : Listener, PacketListener {
     
     private val activeAttachments = HashMap<Player, HashMap<AttachmentType<*>, Attachment>>()
-    private val inactiveAttachments = HashMap<Player, HashSet<ResourceLocation>>()
+    private val inactiveAttachments = HashMap<Player, HashSet<Key>>()
     
     @InitFun
     private fun init() {
@@ -140,18 +136,18 @@ object AttachmentManager : Listener, PacketListener {
         inactiveAttachments -= player
     }
     
-    private fun activateAttachments(player: Player, attachmentIds: Set<ResourceLocation>) {
+    private fun activateAttachments(player: Player, attachmentIds: Set<Key>) {
         attachmentIds.forEach {
-            val type = ATTACHMENT_TYPE[it]
+            val type = ATTACHMENT_TYPE.getValue(it)
             if (type != null) {
                 addAttachment(player, type)
-            } else LOGGER.severe("Unknown attachment type $it on player ${player.name}")
+            } else LOGGER.error("Unknown attachment type $it on player ${player.name}")
         }
     }
     
     private fun loadAttachments(player: Player) {
         val attachmentIds = player.persistentDataContainer
-            .get<HashSet<ResourceLocation>>(ATTACHMENTS_KEY)
+            .get<HashSet<Key>>(ATTACHMENTS_KEY)
             ?: return
         
         if (player.isDead) {
@@ -163,7 +159,7 @@ object AttachmentManager : Listener, PacketListener {
     
     private fun saveAttachments(player: Player) {
         val dataContainer = player.persistentDataContainer
-        val attachmentIds = HashSet<ResourceLocation>()
+        val attachmentIds = HashSet<Key>()
         activeAttachments[player]?.forEach { attachmentIds += it.key.id }
         inactiveAttachments[player]?.let { attachmentIds += it }
         if (attachmentIds.isNotEmpty()) {

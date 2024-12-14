@@ -42,7 +42,8 @@ class ParticleBuilder<T : ParticleOptions>(private val particle: ParticleType<T>
     
     private lateinit var options: T
     private lateinit var location: Location
-    private var longDistance: Boolean = true
+    private var overrideLimiter: Boolean = false
+    private var alwaysShow: Boolean = false
     private var offsetX: Float = 0f
     private var offsetY: Float = 0f
     private var offsetZ: Float = 0f
@@ -61,7 +62,9 @@ class ParticleBuilder<T : ParticleOptions>(private val particle: ParticleType<T>
     
     fun location(location: Location) = apply { this.location = location }
     
-    fun longDistance(longDistance: Boolean) = apply { this.longDistance = longDistance }
+    fun overrideLimiter(overrideLimiter: Boolean) = apply { this.overrideLimiter = overrideLimiter }
+    
+    fun alwaysShow(alwaysShow: Boolean) = apply { this.alwaysShow = alwaysShow }
     
     fun offsetX(offsetX: Float) = apply { this.offsetX = offsetX }
     
@@ -143,7 +146,8 @@ class ParticleBuilder<T : ParticleOptions>(private val particle: ParticleType<T>
     
     fun build() = ClientboundLevelParticlesPacket(
         options,
-        longDistance,
+        overrideLimiter,
+        alwaysShow,
         location.x,
         location.y,
         location.z,
@@ -203,22 +207,13 @@ fun ParticleBuilder<BlockParticleOption>.block(blockState: MojangBlockState) = o
 }
 
 fun ParticleBuilder<DustParticleOptions>.dust(color: Color, size: Float = 1f) = options {
-    DustParticleOptions(Vector3f(color.red / 255f, color.green / 255f, color.blue / 255f), size)
-}
-
-fun ParticleBuilder<DustParticleOptions>.dust(color: Vector3f, size: Float = 1f) = options {
-    DustParticleOptions(color, size)
+    DustParticleOptions(color.rgb, size)
 }
 
 fun ParticleBuilder<DustParticleOptions>.color(color: Color) = dust(color)
 
 fun ParticleBuilder<DustColorTransitionOptions>.dustTransition(from: Color, to: Color, size: Float = 1f) = options {
-    DustColorTransitionOptions(Vector3f(from.red / 255f, from.green / 255f, from.blue / 255f),
-        Vector3f(to.red / 255f, to.green / 255f, to.blue / 255f), size)
-}
-
-fun ParticleBuilder<DustColorTransitionOptions>.dustTransition(from: Vector3f, to: Vector3f, size: Float = 1f) = options {
-    DustColorTransitionOptions(from, to, size)
+    DustColorTransitionOptions(from.rgb, to.rgb, size)
 }
 
 fun ParticleBuilder<DustColorTransitionOptions>.color(from: Color, to: Color) = dustTransition(from, to)

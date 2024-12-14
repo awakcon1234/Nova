@@ -10,6 +10,7 @@ import xyz.xenondevs.commons.gson.toJsonTreeTyped
 import xyz.xenondevs.nova.registry.NovaRegistries
 import xyz.xenondevs.nova.serialization.json.serializer.BackingStateConfigSerialization
 import xyz.xenondevs.nova.serialization.json.serializer.BlockDataTypeAdapter
+import xyz.xenondevs.nova.serialization.json.serializer.BlockStateSerialization
 import xyz.xenondevs.nova.serialization.json.serializer.BlockStateVariantDataSerialization
 import xyz.xenondevs.nova.serialization.json.serializer.EnumMapInstanceCreator
 import xyz.xenondevs.nova.serialization.json.serializer.FontCharSerialization
@@ -20,13 +21,9 @@ import xyz.xenondevs.nova.serialization.json.serializer.LocationSerialization
 import xyz.xenondevs.nova.serialization.json.serializer.LootItemSerialization
 import xyz.xenondevs.nova.serialization.json.serializer.LootTableSerialization
 import xyz.xenondevs.nova.serialization.json.serializer.Matrix4fcTypeAdapter
-import xyz.xenondevs.nova.serialization.json.serializer.ModelTypeAdapter
-import xyz.xenondevs.nova.serialization.json.serializer.NamespacedIdTypeAdapter
-import xyz.xenondevs.nova.serialization.json.serializer.NamespacedKeyTypeAdapter
+import xyz.xenondevs.nova.serialization.json.serializer.NamespacedTypeAdapters
 import xyz.xenondevs.nova.serialization.json.serializer.NovaBlockStateSerialization
 import xyz.xenondevs.nova.serialization.json.serializer.RegistryElementSerializer
-import xyz.xenondevs.nova.serialization.json.serializer.ResourceLocationTypeAdapter
-import xyz.xenondevs.nova.serialization.json.serializer.ResourcePathTypeAdapter
 import xyz.xenondevs.nova.serialization.json.serializer.SizeOverrideSerialization
 import xyz.xenondevs.nova.serialization.json.serializer.UUIDTypeAdapter
 import xyz.xenondevs.nova.serialization.json.serializer.VersionSerialization
@@ -36,11 +33,7 @@ import xyz.xenondevs.nova.serialization.json.serializer.YamlConfigurationTypeAda
 private val GSON_BUILDER = GsonBuilder()
     .disableHtmlEscaping()
     .enableComplexMapKeySerialization()
-    .registerTypeHierarchyAdapter(UUIDTypeAdapter.nullSafe())
-    .registerTypeHierarchyAdapter(NamespacedIdTypeAdapter.nullSafe())
-    .registerTypeHierarchyAdapter(NamespacedKeyTypeAdapter.nullSafe())
-    .registerTypeHierarchyAdapter(ResourceLocationTypeAdapter.nullSafe())
-    .registerTypeHierarchyAdapter(ResourcePathTypeAdapter.nullSafe())
+    .registerTypeAdapterFactory(NamespacedTypeAdapters)
     .registerTypeHierarchyAdapter(ItemStackSerialization)
     .registerTypeHierarchyAdapter(LocationSerialization)
     .registerTypeHierarchyAdapter(WorldTypeAdapter.nullSafe())
@@ -50,8 +43,8 @@ private val GSON_BUILDER = GsonBuilder()
     .registerTypeHierarchyAdapter(LootTableSerialization)
     .registerTypeHierarchyAdapter(LootItemSerialization)
     .registerTypeHierarchyAdapter(VersionSerialization)
-    .registerTypeHierarchyAdapter(ModelTypeAdapter.nullSafe())
     .registerTypeHierarchyAdapter(RegistryElementSerializer(NovaRegistries.BLOCK))
+    .registerTypeHierarchyAdapter(BlockStateSerialization.nullSafe())
     .registerTypeHierarchyAdapter(NovaBlockStateSerialization)
     .registerTypeHierarchyAdapter(BlockStateVariantDataSerialization)
     .registerTypeHierarchyAdapter(BackingStateConfigSerialization)
@@ -59,7 +52,8 @@ private val GSON_BUILDER = GsonBuilder()
     .registerTypeHierarchyAdapter(Matrix4fcTypeAdapter.nullSafe())
     .registerTypeAdapter(RegistryElementSerializer(NovaRegistries.ITEM))
     .registerTypeAdapter(RegistryElementSerializer(NovaRegistries.GUI_TEXTURE))
-    .registerTypeAdapter(RegistryElementSerializer(NovaRegistries.ARMOR))
+    .registerTypeAdapter(RegistryElementSerializer(NovaRegistries.EQUIPMENT))
+    .registerTypeAdapter(UUIDTypeAdapter.nullSafe())
     .registerTypeAdapter(SizeOverrideSerialization)
     .registerTypeAdapter(FontCharSerialization)
     .registerTypeAdapter(EnumMapInstanceCreator)

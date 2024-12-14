@@ -2,6 +2,7 @@ plugins {
     java
     `maven-publish`
     alias(libs.plugins.kotlin)
+    alias(libs.plugins.kotlinx.serialization)
     alias(libs.plugins.dokka)
     id("xyz.xenondevs.bundler-plugin")
     alias(libs.plugins.paperweight)
@@ -10,7 +11,6 @@ plugins {
 dependencies {
     // server
     paperweight.paperDevBundle(libs.versions.paper)
-    compileOnly(libs.bundles.maven.resolver)
     
     // api dependencies
     novaLoaderApi(libs.bundles.kotlin)
@@ -23,9 +23,8 @@ dependencies {
     compileOnly(project(":nova-api"))
     novaLoader(libs.bundles.ktor)
     novaLoader(libs.bundles.minecraft.assets)
-    novaLoader(libs.inventoryaccess)
     novaLoader(libs.bstats)
-    novaLoader(libs.bytbase.runtime)
+    novaLoader(libs.bytebase.runtime)
     novaLoader(libs.fuzzywuzzy)
     novaLoader(libs.awssdk.s3)
     novaLoader(libs.jimfs)
@@ -34,6 +33,7 @@ dependencies {
     novaLoader(libs.zstd)
     novaLoader(libs.bundles.jgrapht)
     novaLoader(libs.snakeyaml.engine)
+    novaLoader(libs.kotlinx.serialization.json)
     
     // test dependencies
     testImplementation(libs.bundles.test)
@@ -45,7 +45,9 @@ sourceSets.main { java.setSrcDirs(listOf("src/main/kotlin/")) }
 tasks {
     withType<ProcessResources> {
         filesMatching("paper-plugin.yml") {
-            expand(project.properties)
+            val properties = HashMap(project.properties)
+            properties["apiVersion"] = libs.versions.paper.get().substring(0, 4)
+            expand(properties)
         }
     }
     

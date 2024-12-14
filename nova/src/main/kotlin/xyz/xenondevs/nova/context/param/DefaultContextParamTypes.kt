@@ -2,8 +2,8 @@
 
 package xyz.xenondevs.nova.context.param
 
+import net.kyori.adventure.key.Key
 import net.minecraft.core.registries.BuiltInRegistries
-import net.minecraft.resources.ResourceLocation
 import org.bukkit.GameMode
 import org.bukkit.Location
 import org.bukkit.Material
@@ -24,12 +24,13 @@ import xyz.xenondevs.nova.registry.NovaRegistries
 import xyz.xenondevs.nova.util.BlockFaceUtils
 import xyz.xenondevs.nova.util.Location
 import xyz.xenondevs.nova.util.bukkitMaterial
+import xyz.xenondevs.nova.util.getValue
 import xyz.xenondevs.nova.util.item.ItemUtils
 import xyz.xenondevs.nova.util.item.ToolUtils
 import xyz.xenondevs.nova.util.item.novaCompound
 import xyz.xenondevs.nova.util.item.takeUnlessEmpty
-import xyz.xenondevs.nova.util.nmsBlock
 import xyz.xenondevs.nova.util.pitch
+import xyz.xenondevs.nova.util.toResourceLocation
 import xyz.xenondevs.nova.util.yaw
 import xyz.xenondevs.nova.world.BlockPos
 import xyz.xenondevs.nova.world.block.NovaBlock
@@ -60,7 +61,6 @@ object DefaultContextParamTypes {
      */
     val BLOCK_POS: ContextParamType<BlockPos> =
         ContextParamType.builder<BlockPos>("block_pos")
-            .requiredIn(BlockPlace, BlockBreak, BlockInteract)
             .build()
     
     /**
@@ -80,7 +80,6 @@ object DefaultContextParamTypes {
      */
     val BLOCK_WORLD: ContextParamType<World> =
         ContextParamType.builder<World>("block_world")
-            .requiredIn(BlockPlace, BlockBreak, BlockInteract)
             .autofilledBy(::BLOCK_POS) { it.world }
             .build()
     
@@ -104,7 +103,7 @@ object DefaultContextParamTypes {
     val BLOCK_TYPE_NOVA: ContextParamType<NovaBlock> =
         ContextParamType.builder<NovaBlock>("block_type_nova")
             .optionalIn(BlockPlace, BlockBreak, BlockInteract)
-            .autofilledBy(::BLOCK_TYPE) { NovaRegistries.BLOCK[it] }
+            .autofilledBy(::BLOCK_TYPE) { NovaRegistries.BLOCK.getValue(it) }
             .autofilledBy(::BLOCK_STATE_NOVA) { it.block }
             .build()
     
@@ -159,7 +158,8 @@ object DefaultContextParamTypes {
      * - [BlockPlace]
      *
      * Autofilled by:
-     * - [BLOCK_ITEM_STACK] if data is present
+     * - [BLOCK_ITEM_STACK] in [BlockPlace] if data is present
+     * - [TILE_ENTITY_NOVA] in [BlockBreak] and [BlockInteract]
      *
      * Autofills: none
      */
@@ -167,7 +167,9 @@ object DefaultContextParamTypes {
         ContextParamType.builder<Compound>("tile_entity_data_nova")
             .optionalIn(BlockPlace)
             .copiedBy(Compound::copy)
-            .autofilledBy(::BLOCK_ITEM_STACK) { itemStack ->
+            .autofilledBy(BlockBreak, ::TILE_ENTITY_NOVA) { tileEntity -> tileEntity.data }
+            .autofilledBy(BlockInteract, ::TILE_ENTITY_NOVA) { tileEntity -> tileEntity.data }
+            .autofilledBy(BlockPlace, ::BLOCK_ITEM_STACK) { itemStack ->
                 itemStack.novaCompound
                     ?.get<Compound>(TileEntity.TILE_ENTITY_DATA_KEY)
                     ?.let { persistentData -> Compound().also { it["persistent"] = persistentData } }
@@ -193,7 +195,7 @@ object DefaultContextParamTypes {
         ContextParamType.builder<Material>("block_type_vanilla")
             .optionalIn(BlockPlace, BlockBreak, BlockInteract)
             .require({ it.isBlock }, { "$it is not a block" })
-            .autofilledBy(::BLOCK_TYPE) { BuiltInRegistries.BLOCK.getOptional(it).getOrNull()?.bukkitMaterial }
+            .autofilledBy(::BLOCK_TYPE) { BuiltInRegistries.BLOCK.getOptional(it.toResourceLocation()).getOrNull()?.bukkitMaterial }
             .build()
     
     // TODO: block state vanilla
@@ -218,12 +220,12 @@ object DefaultContextParamTypes {
      * - [BLOCK_TYPE_NOVA] if Nova block
      * - [BLOCK_TYPE_VANILLA] if vanilla block
      */
-    val BLOCK_TYPE: ContextParamType<ResourceLocation> =
-        ContextParamType.builder<ResourceLocation>("block_type")
+    val BLOCK_TYPE: ContextParamType<Key> =
+        ContextParamType.builder<Key>("block_type")
             .optionalIn(BlockPlace, BlockBreak, BlockInteract)
             .autofilledBy(::BLOCK_TYPE_NOVA) { it.id }
-            .autofilledBy(::BLOCK_TYPE_VANILLA) { BuiltInRegistries.BLOCK.getKey(it.nmsBlock) }
-            .autofilledBy(::BLOCK_ITEM_STACK) { ResourceLocation.parse(ItemUtils.getId(it)) }
+            .autofilledBy(::BLOCK_TYPE_VANILLA) { it.key() }
+            .autofilledBy(::BLOCK_ITEM_STACK) { Key.key(ItemUtils.getId(it)) }
             .build()
     
     /**
@@ -624,6 +626,23 @@ object DefaultContextParamTypes {
     val BYPASS_TILE_ENTITY_LIMITS: DefaultingContextParamType<Boolean> =
         ContextParamType.builder<Boolean>("bypass_tile_entity_limits")
             .optionalIn(BlockPlace)
+            .build(false)
+    
+    /**
+     * Whether the data of the block should be included for creative-pick block interactions.
+     * 
+     * Required in intentions: none
+     * 
+     * Optional in intentions:
+     * - [BlockInteract]
+     * 
+     * Autofilled by: none
+     * 
+     * Autofills: none
+     */
+    val INCLUDE_DATA: DefaultingContextParamType<Boolean> =
+        ContextParamType.builder<Boolean>("include_data")
+            .optionalIn(BlockInteract)
             .build(false)
     
 }

@@ -1,6 +1,7 @@
 plugins {
     alias(libs.plugins.kotlin)
     alias(libs.plugins.dokka)
+    alias(libs.plugins.paperweight) apply false
     id("xyz.xenondevs.bundler-jar-plugin")
 }
 
@@ -41,7 +42,9 @@ subprojects {
                     // experimental features
                     "-opt-in=kotlin.io.path.ExperimentalPathApi",
                     "-opt-in=kotlin.time.ExperimentalTime",
-                    "-opt-in=kotlinx.coroutines.ExperimentalCoroutinesApi"
+                    "-opt-in=kotlinx.coroutines.ExperimentalCoroutinesApi",
+                    "-opt-in=kotlin.experimental.ExperimentalTypeInference",
+                    "-opt-in=xyz.xenondevs.invui.ExperimentalReactiveApi"
                 )
                 
                 if (!project.hasProperty("release")) {

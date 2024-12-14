@@ -3,19 +3,20 @@ package xyz.xenondevs.nova.hook.impl.mmoitems
 import io.lumine.mythic.lib.api.item.NBTItem
 import net.Indyuce.mmoitems.MMOItems
 import net.Indyuce.mmoitems.api.Type
+import net.kyori.adventure.key.Key
 import net.kyori.adventure.text.Component
-import net.minecraft.resources.ResourceLocation
 import org.bukkit.Location
 import org.bukkit.Material
 import org.bukkit.NamespacedKey
 import org.bukkit.block.Block
 import org.bukkit.inventory.ItemStack
-import xyz.xenondevs.nova.world.item.recipe.SingleItemTest
-import xyz.xenondevs.nova.resources.ResourcePath
 import xyz.xenondevs.nova.integration.Hook
 import xyz.xenondevs.nova.integration.customitems.CustomBlockType
 import xyz.xenondevs.nova.integration.customitems.CustomItemService
 import xyz.xenondevs.nova.integration.customitems.CustomItemType
+import xyz.xenondevs.nova.resources.ResourcePath
+import xyz.xenondevs.nova.resources.ResourceType
+import xyz.xenondevs.nova.world.item.recipe.SingleItemTest
 import net.Indyuce.mmoitems.MMOItems as MMOItemsPlugin
 
 @Hook(plugins = ["MMOItems"])
@@ -102,7 +103,7 @@ internal object MMOItemsHook : CustomItemService {
         return null
     }
     
-    override fun getBlockItemModelPaths(): Map<ResourceLocation, ResourcePath> {
+    override fun getBlockItemModelPaths(): Map<Key, ResourcePath<ResourceType.Model>> {
         return emptyMap()
     }
     

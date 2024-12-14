@@ -1,24 +1,27 @@
 package xyz.xenondevs.nova.config
 
-import net.minecraft.resources.ResourceLocation
+import net.kyori.adventure.key.Key
 import org.bukkit.Bukkit
 import org.bukkit.entity.Player
 import org.spongepowered.configurate.CommentedConfigurationNode
+import org.spongepowered.configurate.serialize.TypeSerializerCollection
 import org.spongepowered.configurate.yaml.NodeStyle
 import org.spongepowered.configurate.yaml.YamlConfigurationLoader
-import xyz.xenondevs.nova.NOVA
-import xyz.xenondevs.nova.addon.AddonManager
-import xyz.xenondevs.nova.addon.AddonsLoader
+import xyz.xenondevs.commons.provider.Provider
+import xyz.xenondevs.nova.DATA_FOLDER
+import xyz.xenondevs.nova.NOVA_JAR
+import xyz.xenondevs.nova.addon.Addon
+import xyz.xenondevs.nova.addon.AddonBootstrapper
+import xyz.xenondevs.nova.addon.id
 import xyz.xenondevs.nova.initialize.InitFun
 import xyz.xenondevs.nova.initialize.InternalInit
 import xyz.xenondevs.nova.initialize.InternalInitStage
 import xyz.xenondevs.nova.serialization.configurate.NOVA_CONFIGURATE_SERIALIZERS
+import xyz.xenondevs.nova.util.Key
 import xyz.xenondevs.nova.util.data.useZip
-import java.io.File
 import java.nio.file.Path
 import kotlin.collections.component1
 import kotlin.collections.component2
-import kotlin.collections.set
 import kotlin.io.path.exists
 import kotlin.io.path.extension
 import kotlin.io.path.getLastModifiedTime
@@ -27,77 +30,76 @@ import kotlin.io.path.isDirectory
 import kotlin.io.path.relativeTo
 import kotlin.io.path.walk
 
-private const val DEFAULT_CONFIG_NAME = "config"
+private val DEFAULT_CONFIG_ID = Key.key("nova", "config")
 private const val DEFAULT_CONFIG_PATH = "configs/config.yml"
+val MAIN_CONFIG = Configs[DEFAULT_CONFIG_ID]
 
-val MAIN_CONFIG by lazy { Configs[DEFAULT_CONFIG_NAME] }
-
-@InternalInit(
-    stage = InternalInitStage.PRE_WORLD,
-    dependsOn = [AddonsLoader::class]
-)
+@InternalInit(stage = InternalInitStage.PRE_WORLD)
 object Configs {
     
-    private val extractor = ConfigExtractor(PermanentStorage.storedValue("storedConfigs", ::HashMap))
-    private val configProviders = HashMap<String, RootConfigProvider>()
+    private val customSerializers = HashMap<String, ArrayList<TypeSerializerCollection>>()
     
-    private var mainLoaded = false
-    private var loaded = false
+    private val extractor = ConfigExtractor(PermanentStorage.storedValue("stored_configs", ::HashMap))
+    private val configProviders = HashMap<Key, RootConfigProvider>()
+    
     private var lastReload = -1L
     
     internal fun extractDefaultConfig() {
-        NOVA.novaJar.useZip { extractConfig(it.resolve(DEFAULT_CONFIG_PATH), DEFAULT_CONFIG_NAME, DEFAULT_CONFIG_PATH, ::mainLoaded) }
-        mainLoaded = true
+        NOVA_JAR.useZip { zip ->
+            val from = zip.resolve(DEFAULT_CONFIG_PATH)
+            val to = DATA_FOLDER.resolve(DEFAULT_CONFIG_PATH)
+            extractConfig(from, to, DEFAULT_CONFIG_ID)
+        }
     }
     
     @InitFun
     private fun extractAllConfigs() {
-        extractConfigs("nova", NOVA.novaJar, "configs/nova/")
-        for ((id, loader) in AddonManager.loaders) {
-            extractConfigs(id, loader.file, "configs/")
+        extractConfigs("nova", NOVA_JAR, DATA_FOLDER)
+        for (addon in AddonBootstrapper.addons) {
+            extractConfigs(addon.id, addon.file, addon.dataFolder)
         }
         
-        loaded = true
         lastReload = System.currentTimeMillis()
-        
         configProviders.values.asSequence()
             .filter { it.path.exists() }
-            .forEach(ConfigProvider::update)
+            .forEach { it.set(createLoader(it.configId.namespace(), it.path).load()) }
     }
     
-    private fun extractConfigs(namespace: String, zipFile: File, configsPath: String) {
+    private fun extractConfigs(namespace: String, zipFile: Path, dataFolder: Path) {
         zipFile.useZip { zip ->
-            val configsDir = zip.resolve(configsPath)
+            val configsDir = zip.resolve("configs/")
             configsDir.walk()
                 .filter { !it.isDirectory() && it.extension.equals("yml", true) }
                 .forEach { config ->
                     val relPath = config.relativeTo(configsDir).invariantSeparatorsPathString
-                    val configName = "$namespace:${relPath.substringBeforeLast('.')}"
-                    val configPath = "configs/$namespace/$relPath"
-                    extractConfig(config, configName, configPath, ::loaded)
+                    val configId = Key.key(namespace, relPath.substringBeforeLast('.'))
+                    extractConfig(config, dataFolder.resolve("configs").resolve(relPath), configId)
                 }
         }
     }
     
-    private fun extractConfig(config: Path, configId: String, configPath: String, loadValidation: () -> Boolean) {
-        val destFile = File(NOVA.dataFolder, configPath).toPath()
-        extractor.extract(configPath, config, destFile)
-        if (configId !in configProviders)
-            configProviders[configId] = RootConfigProvider(destFile, configPath, loadValidation)
+    private fun extractConfig(from: Path, to: Path, configId: Key) {
+        extractor.extract(configId, from, to)
+        val provider = configProviders.getOrPut(configId) { RootConfigProvider(to, configId) }
+        provider.reload()
     }
     
-    private fun createConfigProvider(configId: String, loadValidation: () -> Boolean): RootConfigProvider {
-        val (namespace, path) = configId.split(':')
-        val relPath = "configs/$namespace/$path.yml"
-        val file = File(NOVA.dataFolder, relPath).toPath()
-        return RootConfigProvider(file, relPath, loadValidation)
+    private fun resolveConfigPath(configId: Key): Path {
+        val dataFolder = when (configId.namespace()) {
+            "nova" -> DATA_FOLDER
+            else -> AddonBootstrapper.addons.firstOrNull { it.id == configId.namespace() }?.dataFolder
+                ?: throw IllegalArgumentException("No addon with id ${configId.namespace()} found")
+        }
+        return dataFolder.resolve("configs").resolve(configId.value() + ".yml")
     }
     
-    internal fun reload(): List<String> {
+    internal fun reload(): List<Key> {
         val reloadedConfigs = configProviders.asSequence()
-            .filter { (_, provider) -> provider.path.exists() }
-            .filter { (_, provider) -> provider.path.getLastModifiedTime().toMillis() > lastReload } // only reload updated configs
-            .onEach { (_, provider) -> provider.update() }
+            .filter { (_, provider) ->
+                !provider.path.exists() && provider.fileExisted
+                    || provider.path.exists() && provider.path.getLastModifiedTime().toMillis() > lastReload
+            } // only reload updated configs
+            .onEach { (_, provider) -> provider.reload() }
             .mapTo(ArrayList()) { (id, _) -> id }
         lastReload = System.currentTimeMillis()
         
@@ -106,46 +108,50 @@ object Configs {
         return reloadedConfigs
     }
     
-    operator fun get(id: ResourceLocation): ConfigProvider =
-        get(id.toString())
+    operator fun get(id: String): Provider<CommentedConfigurationNode> =
+        get(Key.key(id))
     
-    operator fun get(id: String): ConfigProvider =
-        configProviders.getOrPut(id) { createConfigProvider(id, ::loaded) }
+    operator fun get(addon: Addon, path: String): Provider<CommentedConfigurationNode> =
+        get(Key(addon, path))
     
-    fun getProviderOrNull(id: ResourceLocation): ConfigProvider? =
-        getProviderOrNull(id.toString())
-    
-    fun getProviderOrNull(id: String): ConfigProvider? =
-        configProviders[id]
-    
-    fun getOrNull(id: ResourceLocation): CommentedConfigurationNode? =
-        getOrNull(id.toString())
+    operator fun get(id: Key): Provider<CommentedConfigurationNode> =
+        configProviders.getOrPut(id) { RootConfigProvider(resolveConfigPath(id), id).also { if (lastReload > -1) it.reload() } }
     
     fun getOrNull(id: String): CommentedConfigurationNode? =
-        configProviders[id]?.get()
+        getOrNull(Key.key(id))
     
-    fun save(id: ResourceLocation) =
-        save(id.toString())
+    fun getOrNull(id: Key): CommentedConfigurationNode? =
+        configProviders[id]?.takeIf { it.loaded }?.get()
     
-    fun save(id: String) {
-        createLoader(File(NOVA.dataFolder, "configs/$id.yml")).save(get(id).get())
+    fun save(id: String): Unit =
+        save(Key.key(id))
+    
+    fun save(id: Key) {
+        val config = getOrNull(id)
+            ?: return
+        
+        createLoader(id.namespace(), resolveConfigPath(id)).save(config)
     }
     
-    internal fun createBuilder(): YamlConfigurationLoader.Builder =
+    /**
+     * Registers custom [serializers] for configs of [addon].
+     */
+    fun registerSerializers(addon: Addon, serializers: TypeSerializerCollection) {
+        customSerializers.getOrPut(addon.id, ::ArrayList) += serializers
+    }
+    
+    internal fun createBuilder(namespace: String): YamlConfigurationLoader.Builder =
         YamlConfigurationLoader.builder()
             .nodeStyle(NodeStyle.BLOCK)
             .indent(2)
             .defaultOptions { opts ->
                 opts.serializers { builder ->
                     builder.registerAll(NOVA_CONFIGURATE_SERIALIZERS)
-                    // TODO: allow addons to register their own serializers
+                    customSerializers[namespace]?.forEach(builder::registerAll)
                 }
             }
     
-    internal fun createLoader(file: File): YamlConfigurationLoader =
-        createLoader(file.toPath())
-    
-    internal fun createLoader(path: Path): YamlConfigurationLoader =
-        createBuilder().path(path).build()
+    internal fun createLoader(namespace: String, path: Path): YamlConfigurationLoader =
+        createBuilder(namespace).path(path).build()
     
 }

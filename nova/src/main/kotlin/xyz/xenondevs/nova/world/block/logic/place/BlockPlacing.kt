@@ -2,9 +2,9 @@ package xyz.xenondevs.nova.world.block.logic.place
 
 import kotlinx.coroutines.runBlocking
 import net.minecraft.core.component.DataComponents
+import net.minecraft.world.level.block.state.BlockState
 import net.minecraft.world.level.block.state.pattern.BlockInWorld
 import org.bukkit.GameMode
-import org.bukkit.block.data.BlockData
 import org.bukkit.entity.FallingBlock
 import org.bukkit.entity.Player
 import org.bukkit.event.EventHandler
@@ -16,7 +16,6 @@ import org.bukkit.event.player.PlayerBucketEmptyEvent
 import org.bukkit.event.player.PlayerBucketFillEvent
 import org.bukkit.event.player.PlayerInteractEvent
 import org.bukkit.inventory.ItemStack
-import xyz.xenondevs.nova.addon.AddonsInitializer
 import xyz.xenondevs.nova.context.Context
 import xyz.xenondevs.nova.context.intention.DefaultContextIntentions
 import xyz.xenondevs.nova.context.param.DefaultContextParamTypes
@@ -49,7 +48,7 @@ import xyz.xenondevs.nova.world.pos
  */
 @InternalInit(
     stage = InternalInitStage.POST_WORLD,
-    dependsOn = [AddonsInitializer::class, WorldDataManager::class]
+    dependsOn = [WorldDataManager::class]
 )
 internal object BlockPlacing : Listener {
     
@@ -67,19 +66,19 @@ internal object BlockPlacing : Listener {
     // requires earlier block place event because BlockMigrator has already removed WorldDataManager entry already otherwise
     fun handleBlockPlace(pos: BlockPos): Boolean {
         val blockState = WorldDataManager.getBlockState(pos)
-        return blockState == null || blockState.block.id.namespace == "nova"
+        return blockState == null || blockState.block.id.namespace() == "nova"
     }
     
     @EventHandler(ignoreCancelled = true)
     private fun handleFluidPlace(event: PlayerBucketEmptyEvent) {
         val blockState = WorldDataManager.getBlockState(event.block.pos)
-        event.isCancelled = blockState != null && blockState.block.id.namespace != "nova"
+        event.isCancelled = blockState != null && blockState.block.id.namespace() != "nova"
     }
     
     @EventHandler(ignoreCancelled = true)
     private fun handleFluidRemove(event: PlayerBucketFillEvent) {
         val blockState = WorldDataManager.getBlockState(event.block.pos)
-        event.isCancelled = blockState != null && blockState.block.id.namespace != "nova"
+        event.isCancelled = blockState != null && blockState.block.id.namespace() != "nova"
     }
     
     @EventHandler(ignoreCancelled = true)
@@ -153,8 +152,8 @@ internal object BlockPlacing : Listener {
         
         val vanillaState = when (val info = newState.modelProvider.info) {
             is BackingStateConfig -> info.vanillaBlockState.bukkitBlockData
-            is DisplayEntityBlockModelData -> info.hitboxType
-            is BlockData -> info
+            is DisplayEntityBlockModelData -> info.hitboxType.bukkitBlockData
+            is BlockState -> info.bukkitBlockData
             else -> throw UnsupportedOperationException()
         }
         

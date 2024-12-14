@@ -6,20 +6,21 @@ import com.mojang.serialization.Codec
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
+import net.kyori.adventure.key.Key
 import net.kyori.adventure.text.Component
 import net.kyori.adventure.text.format.Style
-import net.minecraft.resources.ResourceLocation
 import org.bukkit.Material
 import org.bukkit.entity.Entity
 import org.bukkit.inventory.ItemStack
-import xyz.xenondevs.nova.config.ConfigProvider
+import org.spongepowered.configurate.CommentedConfigurationNode
+import xyz.xenondevs.commons.provider.Provider
 import xyz.xenondevs.nova.config.Configs
 import xyz.xenondevs.nova.context.Context
 import xyz.xenondevs.nova.context.intention.DefaultContextIntentions.BlockBreak
 import xyz.xenondevs.nova.context.intention.DefaultContextIntentions.BlockInteract
 import xyz.xenondevs.nova.context.intention.DefaultContextIntentions.BlockPlace
 import xyz.xenondevs.nova.registry.NovaRegistries
-import xyz.xenondevs.nova.resources.layout.block.BlockModelLayout
+import xyz.xenondevs.nova.resources.builder.layout.block.BlockModelLayout
 import xyz.xenondevs.nova.util.concurrent.checkServerThread
 import xyz.xenondevs.nova.world.BlockPos
 import xyz.xenondevs.nova.world.block.behavior.BlockBehavior
@@ -36,13 +37,13 @@ import kotlin.reflect.full.isSuperclassOf
  * Represents a block type in Nova.
  */
 open class NovaBlock internal constructor(
-    val id: ResourceLocation,
+    val id: Key,
     val name: Component,
     val style: Style,
     behaviors: List<BlockBehaviorHolder>,
     val stateProperties: List<ScopedBlockStateProperty<*>>,
     configId: String,
-    internal val requestedLayout: BlockModelLayout
+    internal val layout: BlockModelLayout
 ) {
     
     /**
@@ -53,11 +54,9 @@ open class NovaBlock internal constructor(
     
     /**
      * The configuration for this [NovaBlock].
-     * Trying to read config values from this when no config is present will result in an exception.
-     *
-     * Use the extension functions `entry` and `optionalEntry` to get values from the config.
+     * May be an empty node if the config file does not exist.
      */
-    val config: ConfigProvider by lazy { Configs[configId] }
+    val config: Provider<CommentedConfigurationNode> = Configs[configId]
     
     /**
      * A list of all [BlockBehaviors][BlockBehavior] of this [NovaBlock].
@@ -160,9 +159,9 @@ open class NovaBlock internal constructor(
         behaviors.forEach { it.handleBreak(pos, state, ctx) }
     }
     
-    fun handleNeighborChanged(pos: BlockPos, state: NovaBlockState, neighborPos: BlockPos) {
+    fun handleNeighborChanged(pos: BlockPos, state: NovaBlockState) {
         checkServerThread()
-        behaviors.forEach { it.handleNeighborChanged(pos, state, neighborPos) }
+        behaviors.forEach { it.handleNeighborChanged(pos, state) }
     }
     
     fun updateShape(pos: BlockPos, state: NovaBlockState, neighborPos: BlockPos): NovaBlockState {

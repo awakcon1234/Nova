@@ -1,16 +1,13 @@
 package xyz.xenondevs.nova.ui.menu.explorer.recipes
 
 import org.bukkit.GameMode
-import org.bukkit.entity.Player
 import org.bukkit.event.inventory.ClickType
-import org.bukkit.event.inventory.InventoryClickEvent
 import org.bukkit.inventory.ItemStack
 import org.bukkit.inventory.RecipeChoice
+import xyz.xenondevs.invui.item.Click
 import xyz.xenondevs.invui.item.Item
 import xyz.xenondevs.invui.item.ItemProvider
 import xyz.xenondevs.invui.item.ItemWrapper
-import xyz.xenondevs.invui.item.impl.AutoCycleItem
-import xyz.xenondevs.invui.item.impl.SimpleItem
 import xyz.xenondevs.nova.util.addItemCorrectly
 import xyz.xenondevs.nova.util.item.ItemUtils
 import xyz.xenondevs.nova.util.item.novaItem
@@ -28,13 +25,17 @@ fun createRecipeChoiceItem(itemStacks: List<ItemStack>): Item {
 }
 
 @JvmName("createRecipeChoiceItemItemBuilders")
-fun createRecipeChoiceItem(itemProviders: List<ItemProvider>): Item {
-    return if (itemProviders.size > 1)
-        CyclingRecipeChoiceItem(itemProviders.toTypedArray())
-    else StaticRecipeChoiceItem(itemProviders[0])
-}
+fun createRecipeChoiceItem(itemProviders: List<ItemProvider>): Item =
+    Item.builder()
+        .setCyclingItemProvider(20, itemProviders)
+        .addClickHandler { item, click -> handleRecipeChoiceItemClick(item, click) }
+        .build()
 
-internal fun handleRecipeChoiceItemClick(player: Player, clickType: ClickType, event: InventoryClickEvent, itemProvider: ItemProvider) {
+internal fun handleRecipeChoiceItemClick(item: Item, click: Click) {
+    val player = click.player
+    val clickType = click.clickType
+    val itemProvider = item.getItemProvider(player)
+    
     val id = ItemUtils.getId(itemProvider.get())
     if (clickType == ClickType.LEFT) {
         player.showRecipes(id)
@@ -50,23 +51,7 @@ internal fun handleRecipeChoiceItemClick(player: Player, clickType: ClickType, e
         } else if (clickType.isShiftClick) {
             player.inventory.addItemCorrectly(itemStack)
         } else if (clickType == ClickType.NUMBER_KEY) {
-            player.inventory.setItem(event.hotbarButton, itemStack)
+            player.inventory.setItem(click.hotbarButton, itemStack)
         }
     }
-}
-
-class CyclingRecipeChoiceItem(itemProviders: Array<ItemProvider>) : AutoCycleItem(20, *itemProviders) {
-    
-    override fun handleClick(clickType: ClickType, player: Player, event: InventoryClickEvent) {
-        handleRecipeChoiceItemClick(player, clickType, event, itemProvider)
-    }
-    
-}
-
-class StaticRecipeChoiceItem(itemProvider: ItemProvider) : SimpleItem(itemProvider) {
-    
-    override fun handleClick(clickType: ClickType, player: Player, event: InventoryClickEvent) {
-        handleRecipeChoiceItemClick(player, clickType, event, itemProvider)
-    }
-    
 }

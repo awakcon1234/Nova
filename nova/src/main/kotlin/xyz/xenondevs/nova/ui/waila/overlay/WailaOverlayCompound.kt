@@ -1,10 +1,11 @@
 package xyz.xenondevs.nova.ui.waila.overlay
 
-import net.minecraft.resources.ResourceLocation
+import net.kyori.adventure.key.Key
 import org.bukkit.entity.Player
-import xyz.xenondevs.commons.provider.immutable.combinedProvider
-import xyz.xenondevs.commons.provider.immutable.map
+import xyz.xenondevs.commons.provider.combinedProvider
+import xyz.xenondevs.commons.provider.map
 import xyz.xenondevs.nova.config.MAIN_CONFIG
+import xyz.xenondevs.nova.config.entry
 import xyz.xenondevs.nova.resources.CharSizes
 import xyz.xenondevs.nova.resources.lookup.ResourceLookups
 import xyz.xenondevs.nova.ui.overlay.bossbar.BossBarOverlay
@@ -14,7 +15,7 @@ import xyz.xenondevs.nova.ui.overlay.bossbar.positioning.BarMatcher
 import xyz.xenondevs.nova.ui.overlay.bossbar.positioning.BarPositioning
 import xyz.xenondevs.nova.ui.waila.info.WailaLine
 
-private val BAR_MATCH_INFO = BarMatchInfo.fromAddon(ResourceLocation.fromNamespaceAndPath("nova", "waila"))
+private val BAR_MATCH_INFO = BarMatchInfo.fromAddon(Key.key("nova", "waila"))
 
 private val MARGIN_TOP = MAIN_CONFIG.entry<Int>("waila", "positioning", "margin_top")
 private val MARGIN_BOTTOM = MAIN_CONFIG.entry<Int>("waila", "positioning", "margin_bottom")
@@ -36,7 +37,7 @@ internal class WailaOverlayCompound(private val player: Player) : BossBarOverlay
     private val lineOverlays = Array(10, ::WailaLineOverlay)
     
     @Suppress("DEPRECATION")
-    fun update(icon: ResourceLocation, lines: List<WailaLine>) {
+    fun update(icon: Key, lines: List<WailaLine>) {
         require(lines.size <= 10) { "Waila text can't be longer than 10 lines" }
         
         // reset line overlays

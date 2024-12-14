@@ -1,20 +1,20 @@
 package xyz.xenondevs.nova.resources.builder.basepack
 
 import org.bukkit.Material
-import xyz.xenondevs.commons.provider.immutable.map
+import xyz.xenondevs.commons.provider.map
 import xyz.xenondevs.nova.LOGGER
 import xyz.xenondevs.nova.config.MAIN_CONFIG
+import xyz.xenondevs.nova.config.entry
 import xyz.xenondevs.nova.resources.ResourcePath
+import xyz.xenondevs.nova.resources.ResourceType
 import xyz.xenondevs.nova.resources.builder.ResourcePackBuilder
 import xyz.xenondevs.nova.resources.builder.basepack.merger.FileMerger
-import xyz.xenondevs.nova.resources.builder.task.ArmorData
 import xyz.xenondevs.nova.resources.builder.task.font.MovedFontContent
 import xyz.xenondevs.nova.util.StringUtils
-import xyz.xenondevs.nova.util.data.openZip
+import xyz.xenondevs.nova.util.data.useZip
 import xyz.xenondevs.nova.world.block.state.model.BackingStateConfigType
 import java.io.File
 import java.nio.file.Path
-import java.util.logging.Level
 import kotlin.io.path.copyTo
 import kotlin.io.path.copyToRecursively
 import kotlin.io.path.createDirectories
@@ -46,14 +46,13 @@ class BasePacks internal constructor(private val builder: ResourcePackBuilder) {
     val packAmount = packs.size
     val occupiedModelData = HashMap<Material, HashSet<Int>>()
     internal val occupiedSolidIds = HashMap<BackingStateConfigType<*>, HashSet<Int>>()
-    val customArmor = HashMap<Int, ArmorData>()
     
     internal fun include() {
         packs.map {
             if (it.isFile && it.extension.equals("zip", true)) {
                 val dir = ResourcePackBuilder.TEMP_BASE_PACKS_DIR.resolve("${it.nameWithoutExtension}-${StringUtils.randomString(5)}")
                 dir.createDirectories()
-                it.openZip().copyToRecursively(dir, followLinks = false, overwrite = true)
+                it.useZip { zip -> zip.copyToRecursively(dir, followLinks = false, overwrite = true) }
                 
                 return@map dir
             }
@@ -72,13 +71,13 @@ class BasePacks internal constructor(private val builder: ResourcePackBuilder) {
             .forEach { file ->
                 // Validate file extension
                 if (file.extension.lowercase() !in WHITELISTED_FILE_TYPES) {
-                    LOGGER.warning("Skipping file $file as it is not a resource pack file")
+                    LOGGER.warn("Skipping file $file as it is not a resource pack file")
                     return@forEach
                 }
                 
                 // Validate file name
-                if (!ResourcePath.NON_NAMESPACED_ENTRY.matches(file.name)) {
-                    LOGGER.warning("Skipping file $file as its name does not match regex ${ResourcePath.NON_NAMESPACED_ENTRY}")
+                if (!ResourcePath.isValidPath(file.name)) {
+                    LOGGER.warn("Skipping file $file as its name does not match regex [a-z0-9_.-]")
                     return@forEach
                 }
                 
@@ -91,12 +90,12 @@ class BasePacks internal constructor(private val builder: ResourcePackBuilder) {
                     try {
                         fileMerger.merge(file, packFile, packDir, relPath)
                     } catch (t: Throwable) {
-                        LOGGER.log(Level.SEVERE, "An exception occurred trying to merge base pack file \"$file\" with \"$packFile\"", t)
+                        LOGGER.error("An exception occurred trying to merge base pack file \"$file\" with \"$packFile\"", t)
                     }
                 } else if (!packFile.exists()) {
                     file.copyTo(packFile)
                 } else {
-                    LOGGER.warning("Skipping file $file: File type cannot be merged")
+                    LOGGER.warn("Skipping file $file: File type cannot be merged")
                 }
             }
     }
@@ -114,7 +113,7 @@ class BasePacks internal constructor(private val builder: ResourcePackBuilder) {
                             .split('/')
                         
                         builder.getHolder<MovedFontContent>().requestMovedFonts(
-                            ResourcePath(fontNameParts[0], fontNameParts.drop(2).joinToString("/")),
+                            ResourcePath(ResourceType.Font, fontNameParts[0], fontNameParts.drop(2).joinToString("/")),
                             1..19
                         )
                     }

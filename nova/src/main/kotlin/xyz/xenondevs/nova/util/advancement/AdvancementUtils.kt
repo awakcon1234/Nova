@@ -18,16 +18,16 @@ import org.bukkit.Bukkit
 import org.bukkit.NamespacedKey
 import org.bukkit.entity.Player
 import xyz.xenondevs.nova.addon.Addon
-import xyz.xenondevs.nova.world.item.NovaItem
+import xyz.xenondevs.nova.addon.id
 import xyz.xenondevs.nova.util.component.adventure.toNMSComponent
-import xyz.xenondevs.nova.util.name
 import xyz.xenondevs.nova.util.unwrap
+import xyz.xenondevs.nova.world.item.NovaItem
 import java.util.*
 
 fun advancement(addon: Addon, name: String, init: Advancement.Builder.() -> Unit): AdvancementHolder {
     val builder = Advancement.Builder()
     builder.init()
-    return builder.build(ResourceLocation.fromNamespaceAndPath(addon.description.id, name))
+    return builder.build(ResourceLocation.fromNamespaceAndPath(addon.id, name))
 }
 
 fun obtainNovaItemAdvancement(
@@ -36,22 +36,22 @@ fun obtainNovaItemAdvancement(
     item: NovaItem,
     frameType: AdvancementType = AdvancementType.TASK
 ): AdvancementHolder {
-    require(addon.description.id == item.id.namespace) { "The specified item is from a different addon" }
+    require(addon.id == item.id.namespace()) { "The specified item is from a different addon" }
     val id = item.id
-    return advancement(addon, "obtain_${id.name}") {
+    return advancement(addon, "obtain_${id.value()}") {
         if (parent != null)
             parent(parent)
         
         display(DisplayInfo(
-            item.model.clientsideProvider.get().unwrap().copy(),
-            Component.translatable("advancement.${id.namespace}.${id.name}.title").toNMSComponent(),
-            Component.translatable("advancement.${id.namespace}.${id.name}.description").toNMSComponent(),
+            item.clientsideProvider.get().unwrap().copy(),
+            Component.translatable("advancement.${id.namespace()}.${id.value()}.title").toNMSComponent(),
+            Component.translatable("advancement.${id.namespace()}.${id.value()}.description").toNMSComponent(),
             Optional.empty(),
             frameType,
             true, true, false
         ))
         
-        addCriterion("obtain_${id.name}", createObtainNovaItemCriterion(item))
+        addCriterion("obtain_${id.value()}", createObtainNovaItemCriterion(item))
     }
 }
 
@@ -62,14 +62,14 @@ fun obtainNovaItemsAdvancement(
     items: List<NovaItem>, requireAll: Boolean,
     frameType: AdvancementType = AdvancementType.TASK
 ): AdvancementHolder {
-    require(items.all { it.id.namespace == addon.description.id }) { "At least one of the specified items is from a different addon" }
-    val namespace = addon.description.id
+    require(items.all { it.id.namespace() == addon.id }) { "At least one of the specified items is from a different addon" }
+    val namespace = addon.id
     return advancement(addon, name) {
         if (parent != null)
             parent(parent)
         
         display(DisplayInfo(
-            items[0].model.clientsideProvider.get().unwrap().copy(),
+            items[0].clientsideProvider.get().unwrap().copy(),
             Component.translatable("advancement.$namespace.$name.title").toNMSComponent(),
             Component.translatable("advancement.$namespace.$name.description").toNMSComponent(),
             Optional.empty(),
@@ -80,7 +80,7 @@ fun obtainNovaItemsAdvancement(
         val criteriaNames = ArrayList<String>()
         
         for (item in items) {
-            val criterionName = "obtain_${item.id.name}"
+            val criterionName = "obtain_${item.id.value()}"
             addCriterion(criterionName, createObtainNovaItemCriterion(item))
             criteriaNames += criterionName
         }

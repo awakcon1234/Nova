@@ -3,22 +3,21 @@
 package xyz.xenondevs.nova.world.block.tileentity
 
 import kotlinx.coroutines.Job
+import net.kyori.adventure.key.Key
 import net.kyori.adventure.text.Component
-import net.minecraft.resources.ResourceLocation
 import org.bukkit.Bukkit
 import org.bukkit.OfflinePlayer
 import org.bukkit.entity.Player
 import org.bukkit.inventory.ItemStack
 import xyz.xenondevs.cbf.Compound
 import xyz.xenondevs.commons.provider.Provider
-import xyz.xenondevs.commons.provider.mutable.mapNonNull
+import xyz.xenondevs.commons.provider.mapNonNull
 import xyz.xenondevs.invui.gui.Gui
 import xyz.xenondevs.invui.inventory.VirtualInventory
 import xyz.xenondevs.invui.inventory.event.ItemPostUpdateEvent
 import xyz.xenondevs.invui.inventory.event.ItemPreUpdateEvent
 import xyz.xenondevs.invui.inventory.event.UpdateReason
 import xyz.xenondevs.invui.window.Window
-import xyz.xenondevs.invui.window.type.context.setTitle
 import xyz.xenondevs.nova.context.Context
 import xyz.xenondevs.nova.context.intention.DefaultContextIntentions.BlockBreak
 import xyz.xenondevs.nova.context.intention.DefaultContextIntentions.BlockInteract
@@ -66,7 +65,7 @@ abstract class TileEntity(
         /**
          * The key under which [TileEntity] data is stored in [ItemStacks][ItemStack].
          */
-        val TILE_ENTITY_DATA_KEY = ResourceLocation.fromNamespaceAndPath("nova", "tileentity")
+        val TILE_ENTITY_DATA_KEY = Key.key("nova", "tileentity")
         
     }
     

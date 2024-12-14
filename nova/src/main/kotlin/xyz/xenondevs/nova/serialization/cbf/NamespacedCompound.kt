@@ -1,14 +1,13 @@
 package xyz.xenondevs.nova.serialization.cbf
 
-import net.minecraft.resources.ResourceLocation
-import org.bukkit.NamespacedKey
+import net.kyori.adventure.key.Key
 import xyz.xenondevs.cbf.CBF
 import xyz.xenondevs.cbf.Compound
 import xyz.xenondevs.cbf.adapter.BinaryAdapter
 import xyz.xenondevs.cbf.io.ByteReader
 import xyz.xenondevs.cbf.io.ByteWriter
 import xyz.xenondevs.nova.addon.Addon
-import xyz.xenondevs.nova.util.name
+import xyz.xenondevs.nova.addon.id
 import java.util.*
 import kotlin.reflect.KType
 import kotlin.reflect.typeOf
@@ -17,8 +16,8 @@ class NamespacedCompound internal constructor(
     private val map: MutableMap<String, Compound>
 ) {
     
-    val keys: Set<ResourceLocation>
-        get() = map.flatMapTo(HashSet()) { (namespace, compound) -> compound.keys.map { ResourceLocation.parse("$namespace:$it") } }
+    val keys: Set<Key>
+        get() = map.flatMapTo(HashSet()) { (namespace, compound) -> compound.keys.map { Key.key(namespace, it) } }
     
     constructor() : this(HashMap())
     
@@ -27,16 +26,12 @@ class NamespacedCompound internal constructor(
         compound.set(type, key, value)
     }
     
-    fun set(type: KType, id: ResourceLocation, value: Any?) {
-        set(type, id.namespace, id.name, value)
-    }
-    
-    fun set(type: KType, key: NamespacedKey, value: Any?) {
-        set(type, key.namespace, key.key, value)
+    fun set(type: KType, key: Key, value: Any?) {
+        set(type, key.namespace(), key.value(), value)
     }
     
     fun set(type: KType, addon: Addon, key: String, value: Any?) {
-        set(type, addon.description.id, key, value)
+        set(type, addon.id, key, value)
     }
     
     
@@ -44,11 +39,7 @@ class NamespacedCompound internal constructor(
         set(typeOf<T>(), namespace, key, value)
     }
     
-    inline operator fun <reified T> set(id: ResourceLocation, value: T) {
-        set(typeOf<T>(), id, value)
-    }
-    
-    inline operator fun <reified T> set(key: NamespacedKey, value: T) {
+    inline operator fun <reified T> set(key: Key, value: T) {
         set(typeOf<T>(), key, value)
     }
     
@@ -61,16 +52,12 @@ class NamespacedCompound internal constructor(
         return map[namespace]?.get(type, key)
     }
     
-    fun <T> get(type: KType, id: ResourceLocation): T? {
-        return get(type, id.namespace, id.name)
-    }
-    
-    fun <T> get(type: KType, key: NamespacedKey): T? {
-        return get(type, key.namespace, key.key)
+    fun <T> get(type: KType, key: Key): T? {
+        return get(type, key.namespace(), key.value())
     }
     
     fun <T> get(type: KType, addon: Addon, key: String): T? {
-        return get(type, addon.description.id, key)
+        return get(type, addon.id, key)
     }
     
     
@@ -78,11 +65,7 @@ class NamespacedCompound internal constructor(
         return get(typeOf<T>(), namespace, key)
     }
     
-    inline operator fun <reified T> get(id: ResourceLocation): T? {
-        return get(typeOf<T>(), id)
-    }
-    
-    inline operator fun <reified T> get(key: NamespacedKey): T? {
+    inline operator fun <reified T> get(key: Key): T? {
         return get(typeOf<T>(), key)
     }
     
@@ -95,16 +78,12 @@ class NamespacedCompound internal constructor(
         return get(namespace, key) ?: defaultValue().also { set(namespace, key, it) }
     }
     
-    inline fun <reified T> getOrPut(id: ResourceLocation, defaultValue: () -> T): T {
-        return getOrPut(id.namespace, id.path, defaultValue)
-    }
-    
-    inline fun <reified T> getOrPut(key: NamespacedKey, defaultValue: () -> T): T {
-        return getOrPut(key.namespace, key.key, defaultValue)
+    inline fun <reified T> getOrPut(key: Key, defaultValue: () -> T): T {
+        return getOrPut(key.namespace(), key.value(), defaultValue)
     }
     
     inline fun <reified T> getOrPut(addon: Addon, key: String, defaultValue: () -> T): T {
-        return getOrPut(addon.description.id, key, defaultValue)
+        return getOrPut(addon.id, key, defaultValue)
     }
     
     
@@ -114,42 +93,30 @@ class NamespacedCompound internal constructor(
         if (compound.isEmpty()) map.remove(namespace)
     }
     
-    fun remove(id: ResourceLocation) {
-        remove(id.namespace, id.name)
-    }
-    
-    fun remove(key: NamespacedKey) {
-        remove(key.namespace, key.key)
+    fun remove(key: Key) {
+        remove(key.namespace(), key.value())
     }
     
     fun remove(addon: Addon, key: String) {
-        remove(addon.description.id, key)
+        remove(addon.id, key)
     }
     
-    operator fun minusAssign(id: ResourceLocation) {
-        remove(id)
-    }
-    
-    operator fun minusAssign(key: NamespacedKey) {
+    operator fun minusAssign(key: Key) {
         remove(key)
     }
     
     
     @PublishedApi
     internal fun contains(namespace: String, key: String): Boolean {
-        return map[namespace]?.contains(key) ?: false
+        return map[namespace]?.contains(key) == true
     }
     
-    fun contains(id: ResourceLocation): Boolean {
-        return contains(id.namespace, id.name)
-    }
-    
-    fun contains(key: NamespacedKey): Boolean {
-        return contains(key.namespace, key.key)
+    fun contains(key: Key): Boolean {
+        return contains(key.namespace(), key.value())
     }
     
     fun contains(addon: Addon, key: String): Boolean {
-        return contains(addon.description.id, key)
+        return contains(addon.id, key)
     }
     
     

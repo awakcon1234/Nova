@@ -4,24 +4,25 @@ import dev.lone.itemsadder.api.CustomBlock
 import dev.lone.itemsadder.api.CustomCrop
 import dev.lone.itemsadder.api.CustomStack
 import dev.lone.itemsadder.api.ItemsAdder
+import net.kyori.adventure.key.Key
 import net.kyori.adventure.text.Component
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer
-import net.minecraft.resources.ResourceLocation
 import org.bukkit.Location
 import org.bukkit.Material
 import org.bukkit.NamespacedKey
 import org.bukkit.block.Block
 import org.bukkit.inventory.ItemStack
-import xyz.xenondevs.nova.world.item.recipe.ModelDataTest
-import xyz.xenondevs.nova.world.item.recipe.SingleItemTest
-import xyz.xenondevs.nova.resources.ResourcePath
 import xyz.xenondevs.nova.integration.Hook
 import xyz.xenondevs.nova.integration.customitems.CustomBlockType
 import xyz.xenondevs.nova.integration.customitems.CustomItemService
 import xyz.xenondevs.nova.integration.customitems.CustomItemType
+import xyz.xenondevs.nova.resources.ResourcePath
+import xyz.xenondevs.nova.resources.ResourceType
+import xyz.xenondevs.nova.util.broadcastBreakEvent
 import xyz.xenondevs.nova.util.item.customModelData
 import xyz.xenondevs.nova.util.item.playPlaceSoundEffect
-import xyz.xenondevs.nova.util.broadcastBreakEvent
+import xyz.xenondevs.nova.world.item.recipe.ModelDataTest
+import xyz.xenondevs.nova.world.item.recipe.SingleItemTest
 
 @Hook(plugins = ["ItemsAdder"], loadListener = ItemsAdderLoadListener::class)
 internal object ItemsAdderHook : CustomItemService {
@@ -136,13 +137,13 @@ internal object ItemsAdderHook : CustomItemService {
         return null
     }
     
-    override fun getBlockItemModelPaths(): Map<ResourceLocation, ResourcePath> {
+    override fun getBlockItemModelPaths(): Map<Key, ResourcePath<ResourceType.Model>> {
         return ItemsAdder.getAllItems()
             .filter { it.isBlock || CustomCrop.isSeed(it.itemStack) }
             .map(CustomStack::getNamespacedID)
             .associateTo(HashMap()) {
                 val path = ItemsAdder.Advanced.getItemModelResourceLocation(it)!!.substringBeforeLast('.')
-                ResourceLocation.parse(it) to ResourcePath.of(path)
+                Key.key(it) to ResourcePath.of(ResourceType.Model, path)
             }
     }
     

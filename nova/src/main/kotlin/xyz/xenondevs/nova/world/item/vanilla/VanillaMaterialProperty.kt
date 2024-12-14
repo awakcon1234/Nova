@@ -1,5 +1,8 @@
 package xyz.xenondevs.nova.world.item.vanilla
 
+/**
+ * Represents non-data-driven properties of items that are hardcoded to specific item types.
+ */
 enum class VanillaMaterialProperty {
     
     /**
@@ -7,24 +10,17 @@ enum class VanillaMaterialProperty {
      */
     CREATIVE_NON_BLOCK_BREAKING,
     
+    // this is a vanilla material property because we don't want to make non-dyeable items (shulker shell) dyeable server-side,
+    // so instead we can just use an item type that is already dyeable
+    // (the client checks whether items are in the dyeable tag for armor rendering)
     /**
-     * The item can render a custom helmet texture.
+     * The item is in the DYEABLE tag.
      */
-    HELMET,
+    DYEABLE,
     
     /**
-     * The item can render a custom chestplate texture.
+     * The item can show bundle contents.
      */
-    CHESTPLATE,
-    
-    /**
-     * The item can render a custom leggings texture.
-     */
-    LEGGINGS,
-    
-    /**
-     * The item can render a custom boots texture.
-     */
-    BOOTS
+    BUNDLE
     
 }

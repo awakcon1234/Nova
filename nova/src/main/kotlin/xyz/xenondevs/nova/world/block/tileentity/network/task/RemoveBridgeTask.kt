@@ -17,6 +17,9 @@ import xyz.xenondevs.nova.world.format.NetworkState
 import xyz.xenondevs.nova.world.format.chunk.NetworkBridgeData
 import xyz.xenondevs.nova.world.format.chunk.NetworkEndPointData
 import java.util.*
+import kotlin.collections.component1
+import kotlin.collections.component2
+import kotlin.collections.filterTo
 
 internal class RemoveBridgeTask(
     state: NetworkState,
@@ -51,7 +54,7 @@ internal class RemoveBridgeTask(
                 val recalculatedNetworkLayouts = recalculateNetworks(node, connectedBridges, networkType)
                 if (recalculatedNetworkLayouts != null) { // null means no split in networks
                     val recalculatedNetworks = recalculatedNetworkLayouts.map { nodes ->
-                        ProtoNetwork(state, networkType, nodes = nodes.filterTo(HashMap()) { (_, con) -> con.node !is GhostNetworkNode }) 
+                        ProtoNetwork(state, networkType, nodes = nodes.filterTo(HashMap()) { (_, con) -> con.node !is GhostNetworkNode })
                     }
                     state -= currentNetwork
                     state += recalculatedNetworks

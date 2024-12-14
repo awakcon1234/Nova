@@ -13,7 +13,6 @@ import xyz.xenondevs.nova.patch.MultiTransformer
 import xyz.xenondevs.nova.util.reflection.ReflectionUtils
 import xyz.xenondevs.nova.util.toNovaPos
 import xyz.xenondevs.nova.world.block.logic.place.BlockPlacing
-import java.util.logging.Level
 
 private val BLOCK_ITEM_PLACE_BLOCK = ReflectionUtils.getMethod(BlockItem::class, "placeBlock", BlockPlaceContext::class, BlockState::class)
 
@@ -34,8 +33,8 @@ internal object EarlyBlockPlaceEventPatch : MultiTransformer(BlockItem::class) {
                 context.player?.containerMenu?.sendAllDataToRemote()
                 return false
             }
-        } catch(t: Throwable) {
-            LOGGER.log(Level.SEVERE, "An exception occurred while handling early block place event", t)
+        } catch (t: Throwable) {
+            LOGGER.error("An exception occurred while handling early block place event", t)
         }
         
         return BLOCK_ITEM_PLACE_BLOCK.invoke(blockItem, context, state) as Boolean

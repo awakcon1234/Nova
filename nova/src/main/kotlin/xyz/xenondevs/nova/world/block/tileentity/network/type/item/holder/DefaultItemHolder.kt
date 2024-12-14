@@ -4,10 +4,11 @@ package xyz.xenondevs.nova.world.block.tileentity.network.type.item.holder
 
 import org.bukkit.block.BlockFace
 import xyz.xenondevs.cbf.Compound
-import xyz.xenondevs.cbf.provider.entry
+import xyz.xenondevs.cbf.entry
 import xyz.xenondevs.commons.collections.enumMap
 import xyz.xenondevs.commons.provider.Provider
-import xyz.xenondevs.commons.provider.mutable.defaultsToLazily
+import xyz.xenondevs.commons.provider.observed
+import xyz.xenondevs.commons.provider.orElseNew
 import xyz.xenondevs.invui.inventory.VirtualInventory
 import xyz.xenondevs.nova.serialization.DataHolder
 import xyz.xenondevs.nova.util.CUBE_FACES
@@ -52,11 +53,13 @@ class DefaultItemHolder(
     
     override val insertFilters: MutableMap<BlockFace, ItemFilter<*>>
         by compound.entry<MutableMap<BlockFace, ItemFilter<*>>>("insertFilters")
-            .defaultsToLazily(::enumMap)
+            .orElseNew(::enumMap)
+            .observed()
     
     override val extractFilters: MutableMap<BlockFace, ItemFilter<*>>
         by compound.entry<MutableMap<BlockFace, ItemFilter<*>>>("extractFilters")
-            .defaultsToLazily(::enumMap)
+            .orElseNew(::enumMap)
+            .observed()
     
     fun getNetworkedInventory(inv: VirtualInventory): NetworkedInventory =
         getNetworkedInventory(inv.uuid)

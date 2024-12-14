@@ -2,6 +2,7 @@ package xyz.xenondevs.nova.util.data
 
 import org.joml.Vector2i
 import org.joml.Vector2ic
+import java.awt.Color
 import java.awt.Point
 import java.awt.image.BufferedImage
 import java.awt.image.ColorModel
@@ -119,10 +120,101 @@ internal object ImageUtils {
     @JvmStatic
     fun createImageFromArgbRaster(width: Int, raster: IntArray): BufferedImage {
         // https://stackoverflow.com/questions/14416107/int-array-to-bufferedimage
-        val sm = SinglePixelPackedSampleModel(DataBuffer.TYPE_INT, width, 16, ARGB_BIT_MASKS)
+        val sm = SinglePixelPackedSampleModel(DataBuffer.TYPE_INT, width, raster.size / width, ARGB_BIT_MASKS)
         val db = DataBufferInt(raster, raster.size)
         val wr = Raster.createWritableRaster(sm, db, Point())
         return BufferedImage(ColorModel.getRGBdefault(), wr, false, null)
+    }
+    
+    /**
+     * Makes all semi-transparent pixels with alpha < 128 completely transparent
+     * and all semi-transparent pixels with alpha >= 128 completely opaque.
+     */
+    fun removeSemiTransparentPixels(image: BufferedImage) {
+        for (x in 0 until image.width) {
+            for (y in 0 until image.height) {
+                val rgb = image.getRGB(x, y)
+                val alpha = rgb ushr 24
+                if (alpha == 0 || alpha == 255)
+                    continue
+                
+                if (alpha > 127) {
+                    image.setRGB(x, y, rgb or (0xFF000000).toInt())
+                } else {
+                    image.setRGB(x, y, 0)
+                }
+            }
+        }
+    }
+    
+    /**
+     * Applies a linear interpolation to all pixels of the given [from] and [to] images.
+     */
+    fun lerp(from: BufferedImage, to: BufferedImage, blendFactor: Float): BufferedImage {
+        val width = from.width
+        val height = from.height
+        val result = BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB)
+        
+        
+        for (x in 0 until width) {
+            for (y in 0 until height) {
+                val fromARGB = from.getRGB(x, y)
+                val toARGB = to.getRGB(x, y)
+                
+                val fromA = fromARGB ushr 24 and 0xFF
+                val fromR = fromARGB ushr 16 and 0xFF
+                val fromG = fromARGB ushr 8 and 0xFF
+                val fromB = fromARGB and 0xFF
+                
+                val toA = toARGB ushr 24 and 0xFF
+                val toR = toARGB ushr 16 and 0xFF
+                val toG = toARGB ushr 8 and 0xFF
+                val toB = toARGB and 0xFF
+                
+                val resultA = (fromA + (toA - fromA) * blendFactor).toInt()
+                val resultR = (fromR + (toR - fromR) * blendFactor).toInt()
+                val resultG = (fromG + (toG - fromG) * blendFactor).toInt()
+                val resultB = (fromB + (toB - fromB) * blendFactor).toInt()
+                
+                val resultARGB = resultA shl 24 or (resultR shl 16) or (resultG shl 8) or resultB
+                result.setRGB(x, y, resultARGB)
+            }
+        }
+        
+        return result
+    }
+    
+    /**
+     * Linearly interpolates between [from] and [to] using the given [blendFactor].
+     */
+    fun lerp(from: Color, to: Color, blendFactor: Float): Color {
+        val fromA = from.alpha
+        val fromR = from.red
+        val fromG = from.green
+        val fromB = from.blue
+        
+        val toA = to.alpha
+        val toR = to.red
+        val toG = to.green
+        val toB = to.blue
+        
+        val resultA = (fromA + (toA - fromA) * blendFactor).toInt()
+        val resultR = (fromR + (toR - fromR) * blendFactor).toInt()
+        val resultG = (fromG + (toG - fromG) * blendFactor).toInt()
+        val resultB = (fromB + (toB - fromB) * blendFactor).toInt()
+        
+        return Color(resultR, resultG, resultB, resultA)
+    }
+    
+    /**
+     * Creates a copy of [image] into [BufferedImage.TYPE_INT_ARGB].
+     */
+    fun copyToARGB(image: BufferedImage): BufferedImage {
+        val copy = BufferedImage(image.width, image.height, BufferedImage.TYPE_INT_ARGB)
+        val graphics = copy.createGraphics()
+        graphics.drawImage(image, 0, 0, null)
+        graphics.dispose()
+        return copy
     }
     
 }

@@ -1,13 +1,14 @@
 package xyz.xenondevs.nova.integration.customitems
 
+import net.kyori.adventure.key.Key
 import net.kyori.adventure.text.Component
-import net.minecraft.resources.ResourceLocation
 import org.bukkit.Location
 import org.bukkit.NamespacedKey
 import org.bukkit.block.Block
 import org.bukkit.inventory.ItemStack
-import xyz.xenondevs.nova.world.item.recipe.SingleItemTest
 import xyz.xenondevs.nova.resources.ResourcePath
+import xyz.xenondevs.nova.resources.ResourceType
+import xyz.xenondevs.nova.world.item.recipe.SingleItemTest
 
 enum class CustomBlockType { NORMAL, CROP }
 enum class CustomItemType { NORMAL, SEED }
@@ -93,6 +94,6 @@ interface CustomItemService {
      *
      * example: [minecraft:dirt -> minecraft:item/dirt]
      */
-    fun getBlockItemModelPaths(): Map<ResourceLocation, ResourcePath>
+    fun getBlockItemModelPaths(): Map<Key, ResourcePath<ResourceType.Model>>
     
 }

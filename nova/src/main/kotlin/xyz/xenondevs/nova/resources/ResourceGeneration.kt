@@ -1,11 +1,11 @@
 package xyz.xenondevs.nova.resources
 
 import kotlinx.coroutines.runBlocking
-import xyz.xenondevs.inventoryaccess.util.DataUtils
 import xyz.xenondevs.nova.LOGGER
-import xyz.xenondevs.nova.NOVA
-import xyz.xenondevs.nova.addon.AddonManager
-import xyz.xenondevs.nova.addon.AddonsInitializer
+import xyz.xenondevs.nova.NOVA_VERSION
+import xyz.xenondevs.nova.addon.AddonBootstrapper
+import xyz.xenondevs.nova.addon.id
+import xyz.xenondevs.nova.addon.version
 import xyz.xenondevs.nova.config.PermanentStorage
 import xyz.xenondevs.nova.initialize.Dispatcher
 import xyz.xenondevs.nova.initialize.InitFun
@@ -23,6 +23,8 @@ import xyz.xenondevs.nova.world.item.DefaultBlockOverlays
 import xyz.xenondevs.nova.world.item.DefaultGuiItems
 import xyz.xenondevs.nova.world.item.DefaultItems
 import java.security.MessageDigest
+import java.util.HexFormat
+import kotlin.io.path.notExists
 
 private const val FORCE_REBUILD_FLAG = "NovaForceRegenerateResourcePack"
 private const val VERSION_HASH = "version_hash"
@@ -40,7 +42,6 @@ internal object ResourceGeneration {
         stage = InternalInitStage.PRE_WORLD,
         dispatcher = Dispatcher.ASYNC,
         dependsOn = [
-            AddonsInitializer::class,
             DefaultItems::class,
             DefaultGuiItems::class,
             DefaultBlocks::class,
@@ -54,7 +55,7 @@ internal object ResourceGeneration {
         private fun init() {
             versionHash = calculateVersionHash()
             if (System.getProperty(FORCE_REBUILD_FLAG) != null
-                || !ResourcePackBuilder.RESOURCE_PACK_FILE.exists()
+                || ResourcePackBuilder.RESOURCE_PACK_FILE.notExists()
                 || PermanentStorage.retrieveOrNull<String>(VERSION_HASH) != versionHash
                 || !ResourceLookups.hasAllLookups()
                 || !ResourceLookups.tryLoadAll()
@@ -99,16 +100,15 @@ internal object ResourceGeneration {
         val digest = MessageDigest.getInstance("MD5")
         
         // Nova version
-        digest.update(NOVA.version.toString().toByteArray())
+        digest.update(NOVA_VERSION.toString().toByteArray())
         
         // Addon versions
-        AddonManager.loaders.forEach { (id, loader) ->
-            // id and version
-            digest.update(id.toByteArray())
-            digest.update(loader.description.version.toByteArray())
+        for (addon in AddonBootstrapper.addons) {
+            digest.update(addon.id.toByteArray())
+            digest.update(addon.version.toByteArray())
         }
         
-        return DataUtils.toHexadecimalString(digest.digest())
+        return HexFormat.of().formatHex(digest.digest())
     }
     
     /**
@@ -126,7 +126,7 @@ internal object ResourceGeneration {
             runBlocking {
                 val url = AutoUploadManager.uploadPack(ResourcePackBuilder.RESOURCE_PACK_FILE)
                 if (url == null)
-                    LOGGER.warning("The resource pack was not uploaded. (Misconfigured auto uploader?)")
+                    LOGGER.warn("The resource pack was not uploaded. (Misconfigured auto uploader?)")
             }
         }
     }

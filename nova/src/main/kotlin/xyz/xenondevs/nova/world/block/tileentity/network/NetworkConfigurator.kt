@@ -38,7 +38,6 @@ import xyz.xenondevs.nova.world.block.tileentity.network.task.ProtectionResult
 import xyz.xenondevs.nova.world.block.tileentity.network.task.UnloadChunkTask
 import xyz.xenondevs.nova.world.format.WorldDataManager
 import java.util.concurrent.ConcurrentHashMap
-import java.util.logging.Level
 
 internal class NetworkConfigurator(private val world: World, private val ticker: NetworkTicker) {
     
@@ -104,7 +103,7 @@ internal class NetworkConfigurator(private val world: World, private val ticker:
                             processTask(task)
                             task.event.commit()
                         } catch (e: Exception) {
-                            LOGGER.log(Level.SEVERE, "An exception occurred trying to process NetworkTask: $task", e)
+                            LOGGER.error("An exception occurred trying to process NetworkTask: $task", e)
                         }
                     }
                     dirtyNotificationChannel.onReceive {
@@ -114,12 +113,12 @@ internal class NetworkConfigurator(private val world: World, private val ticker:
                             ticker.submit(world, buildClusters())
                             event.commit()
                         } catch (e: Exception) {
-                            LOGGER.log(Level.SEVERE, "An exception occurred trying to build dirty networks", e)
+                            LOGGER.error("An exception occurred trying to build dirty networks", e)
                         }
                     }
                 }
             }
-        } catch(_: ClosedReceiveChannelException) {
+        } catch (_: ClosedReceiveChannelException) {
         }
     }
     

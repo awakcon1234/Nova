@@ -2,12 +2,12 @@ package xyz.xenondevs.nova.addon.registry.worldgen
 
 import it.unimi.dsi.fastutil.doubles.DoubleArrayList
 import it.unimi.dsi.fastutil.doubles.DoubleList
+import net.minecraft.core.registries.Registries
 import net.minecraft.world.level.levelgen.NoiseGeneratorSettings
 import net.minecraft.world.level.levelgen.synth.NormalNoise.NoiseParameters
 import xyz.xenondevs.nova.addon.registry.AddonGetter
-import xyz.xenondevs.nova.registry.vanilla.VanillaRegistries
+import xyz.xenondevs.nova.patch.impl.registry.set
 import xyz.xenondevs.nova.util.ResourceLocation
-import xyz.xenondevs.nova.util.set
 import xyz.xenondevs.nova.world.generation.ExperimentalWorldGen
 
 interface NoiseRegistry : AddonGetter {
@@ -15,7 +15,7 @@ interface NoiseRegistry : AddonGetter {
     @ExperimentalWorldGen
     fun registerNoiseParameters(name: String, noiseParams: NoiseParameters): NoiseParameters {
         val id = ResourceLocation(addon, name)
-        VanillaRegistries.NOISE[id] = noiseParams
+        Registries.NOISE[id] = noiseParams
         return noiseParams
     }
     
@@ -34,7 +34,7 @@ interface NoiseRegistry : AddonGetter {
     @ExperimentalWorldGen
     fun registerNoiseGenerationSettings(name: String, settings: NoiseGeneratorSettings): NoiseGeneratorSettings {
         val id = ResourceLocation(addon, name)
-        VanillaRegistries.NOISE_SETTINGS[id] = settings
+        Registries.NOISE_SETTINGS[id] = settings
         return settings
     }
     

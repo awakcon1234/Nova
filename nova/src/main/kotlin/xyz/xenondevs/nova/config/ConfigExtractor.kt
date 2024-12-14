@@ -1,5 +1,6 @@
 package xyz.xenondevs.nova.config
 
+import net.kyori.adventure.key.Key
 import org.snakeyaml.engine.v2.api.DumpSettings
 import org.snakeyaml.engine.v2.api.LoadSettings
 import org.snakeyaml.engine.v2.api.YamlOutputStreamWriter
@@ -11,7 +12,7 @@ import org.snakeyaml.engine.v2.nodes.SequenceNode
 import org.snakeyaml.engine.v2.parser.ParserImpl
 import org.snakeyaml.engine.v2.scanner.StreamReader
 import org.snakeyaml.engine.v2.serializer.Serializer
-import xyz.xenondevs.commons.provider.mutable.MutableProvider
+import xyz.xenondevs.commons.provider.MutableProvider
 import xyz.xenondevs.nova.util.data.NodeWalkDecision
 import xyz.xenondevs.nova.util.data.deepEquals
 import xyz.xenondevs.nova.util.data.get
@@ -28,22 +29,22 @@ import kotlin.io.path.exists
 import kotlin.io.path.inputStream
 import kotlin.io.path.outputStream
 
-internal class ConfigExtractor(extractedConfigs: MutableProvider<Map<String, String>>) {
+internal class ConfigExtractor(extractedConfigs: MutableProvider<Map<Key, String>>) {
     
-    private var extractedConfigs: Map<String, String> by extractedConfigs
+    private var extractedConfigs: Map<Key, String> by extractedConfigs
     
-    fun extract(configPath: String, fileInZip: Path, destFile: Path) {
+    fun extract(configId: Key, fileInZip: Path, destFile: Path) {
         val internalCfg = loadYaml(fileInZip)
-        val extractedCfg = extractedConfigs[configPath]?.let(::loadYaml)
+        val extractedCfg = extractedConfigs[configId]?.let(::loadYaml)
         
         val severCfg: Node
         if (!destFile.exists() || extractedCfg == null) {
             severCfg = internalCfg
-            extractedConfigs = extractedConfigs.toMutableMap().apply { put(configPath, writeYaml(severCfg, false)) }
+            extractedConfigs = extractedConfigs.toMutableMap().apply { put(configId, writeYaml(severCfg, false)) }
         } else {
             severCfg = loadYaml(destFile)
             updateExistingConfig(severCfg, extractedCfg, internalCfg)
-            extractedConfigs = extractedConfigs.toMutableMap().apply { put(configPath, writeYaml(extractedCfg, false)) }
+            extractedConfigs = extractedConfigs.toMutableMap().apply { put(configId, writeYaml(extractedCfg, false)) }
         }
         
         writeYaml(severCfg, destFile)

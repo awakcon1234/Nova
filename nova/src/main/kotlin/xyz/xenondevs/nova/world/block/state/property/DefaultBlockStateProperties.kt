@@ -1,16 +1,17 @@
 package xyz.xenondevs.nova.world.block.state.property
 
-import net.minecraft.resources.ResourceLocation
+import net.kyori.adventure.key.Key
+import net.minecraft.world.level.block.state.properties.NoteBlockInstrument
 import org.bukkit.Axis
 import org.bukkit.Fluid
 import org.bukkit.block.BlockFace
 import xyz.xenondevs.nova.context.param.DefaultContextParamTypes
 import xyz.xenondevs.nova.util.BlockFaceUtils
-import xyz.xenondevs.nova.util.Instrument
 import xyz.xenondevs.nova.util.axis
 import xyz.xenondevs.nova.util.calculateYaw
 import xyz.xenondevs.nova.util.calculateYawPitch
 import xyz.xenondevs.nova.world.block.behavior.LeavesBehavior
+import xyz.xenondevs.nova.world.block.behavior.NoteBlockBehavior
 import xyz.xenondevs.nova.world.block.state.property.impl.BooleanProperty
 import xyz.xenondevs.nova.world.block.state.property.impl.EnumProperty
 import xyz.xenondevs.nova.world.block.state.property.impl.IntProperty
@@ -20,33 +21,33 @@ object DefaultBlockStateProperties {
     /**
      * A property for the [BlockFace] a block is facing.
      */
-    val FACING: EnumProperty<BlockFace> = EnumProperty(ResourceLocation.fromNamespaceAndPath("nova", "facing"))
+    val FACING: EnumProperty<BlockFace> = EnumProperty(Key.key("nova", "facing"))
     
     /**
      * A property for the [Axis] a block is aligned to.
      */
-    val AXIS: EnumProperty<Axis> = EnumProperty(ResourceLocation.fromNamespaceAndPath("nova", "axis"))
+    val AXIS: EnumProperty<Axis> = EnumProperty(Key.key("nova", "axis"))
     
     /**
      * A property for the waterlogged state of a block.
      */
-    val WATERLOGGED: BooleanProperty = BooleanProperty(ResourceLocation.fromNamespaceAndPath("nova", "waterlogged"))
+    val WATERLOGGED: BooleanProperty = BooleanProperty(Key.key("nova", "waterlogged"))
     
     /**
      * A property for the redstone powered state of a block.
      */
-    val POWERED: BooleanProperty = BooleanProperty(ResourceLocation.fromNamespaceAndPath("nova", "powered"))
+    val POWERED: BooleanProperty = BooleanProperty(Key.key("nova", "powered"))
     
-    internal val NOTE_BLOCK_INSTRUMENT: EnumProperty<Instrument> = EnumProperty(ResourceLocation.fromNamespaceAndPath("nova", "instrument"))
-    internal val NOTE_BLOCK_NOTE: IntProperty = IntProperty(ResourceLocation.fromNamespaceAndPath("nova", "note"))
-    internal val LEAVES_DISTANCE: IntProperty = IntProperty(ResourceLocation.fromNamespaceAndPath("nova", "distance"))
-    internal val LEAVES_PERSISTENT: BooleanProperty = BooleanProperty(ResourceLocation.fromNamespaceAndPath("nova", "persistent"))
-    internal val TRIPWIRE_NORTH: BooleanProperty = BooleanProperty(ResourceLocation.fromNamespaceAndPath("nova", "north"))
-    internal val TRIPWIRE_EAST: BooleanProperty = BooleanProperty(ResourceLocation.fromNamespaceAndPath("nova", "east"))
-    internal val TRIPWIRE_SOUTH: BooleanProperty = BooleanProperty(ResourceLocation.fromNamespaceAndPath("nova", "south"))
-    internal val TRIPWIRE_WEST: BooleanProperty = BooleanProperty(ResourceLocation.fromNamespaceAndPath("nova", "west"))
-    internal val TRIPWIRE_ATTACHED: BooleanProperty = BooleanProperty(ResourceLocation.fromNamespaceAndPath("nova", "attached"))
-    internal val TRIPWIRE_DISARMED: BooleanProperty = BooleanProperty(ResourceLocation.fromNamespaceAndPath("nova", "disarmed"))
+    internal val NOTE_BLOCK_INSTRUMENT: EnumProperty<NoteBlockInstrument> = EnumProperty(Key.key("nova", "instrument"))
+    internal val NOTE_BLOCK_NOTE: IntProperty = IntProperty(Key.key("nova", "note"))
+    internal val LEAVES_DISTANCE: IntProperty = IntProperty(Key.key("nova", "distance"))
+    internal val LEAVES_PERSISTENT: BooleanProperty = BooleanProperty(Key.key("nova", "persistent"))
+    internal val TRIPWIRE_NORTH: BooleanProperty = BooleanProperty(Key.key("nova", "north"))
+    internal val TRIPWIRE_EAST: BooleanProperty = BooleanProperty(Key.key("nova", "east"))
+    internal val TRIPWIRE_SOUTH: BooleanProperty = BooleanProperty(Key.key("nova", "south"))
+    internal val TRIPWIRE_WEST: BooleanProperty = BooleanProperty(Key.key("nova", "west"))
+    internal val TRIPWIRE_ATTACHED: BooleanProperty = BooleanProperty(Key.key("nova", "attached"))
+    internal val TRIPWIRE_DISARMED: BooleanProperty = BooleanProperty(Key.key("nova", "disarmed"))
     
 }
 
@@ -144,9 +145,9 @@ object DefaultScopedBlockStateProperties {
             ctx.getOrThrow(DefaultContextParamTypes.BLOCK_POS).block.isBlockIndirectlyPowered
         }
     
-    internal val NOTE_BLOCK_INSTRUMENT: ScopedBlockStateProperty<Instrument> =
+    internal val NOTE_BLOCK_INSTRUMENT: ScopedBlockStateProperty<NoteBlockInstrument> =
         DefaultBlockStateProperties.NOTE_BLOCK_INSTRUMENT.scope { ctx ->
-            Instrument.determineInstrument(ctx.getOrThrow(DefaultContextParamTypes.BLOCK_POS))
+            NoteBlockBehavior.determineInstrument(ctx.getOrThrow(DefaultContextParamTypes.BLOCK_POS))
         }
     
     internal val NOTE_BLOCK_NOTE: ScopedBlockStateProperty<Int> =

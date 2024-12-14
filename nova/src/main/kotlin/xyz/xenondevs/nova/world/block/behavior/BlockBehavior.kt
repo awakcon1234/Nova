@@ -6,6 +6,7 @@ import xyz.xenondevs.nova.context.Context
 import xyz.xenondevs.nova.context.intention.DefaultContextIntentions.BlockBreak
 import xyz.xenondevs.nova.context.intention.DefaultContextIntentions.BlockInteract
 import xyz.xenondevs.nova.context.intention.DefaultContextIntentions.BlockPlace
+import xyz.xenondevs.nova.context.param.DefaultContextParamTypes
 import xyz.xenondevs.nova.integration.protection.ProtectionManager
 import xyz.xenondevs.nova.world.BlockPos
 import xyz.xenondevs.nova.world.block.NovaBlock
@@ -53,9 +54,9 @@ interface BlockBehavior : BlockBehaviorHolder {
     fun handleBreak(pos: BlockPos, state: NovaBlockState, ctx: Context<BlockBreak>) = Unit
     
     /**
-     * Called when a block at [neighborPos] changed next to this [state] at [pos].
+     * Called when a redstone update happened that may affect this [state] at [pos].
      */
-    fun handleNeighborChanged(pos: BlockPos, state: NovaBlockState, neighborPos: BlockPos) = Unit
+    fun handleNeighborChanged(pos: BlockPos, state: NovaBlockState) = Unit
     
     /**
      * Called when a block at [neighborPos] changed to update the [NovaBlockState] of this [state] at [pos].
@@ -95,6 +96,7 @@ interface BlockBehavior : BlockBehaviorHolder {
     
     /**
      * Chooses the [ItemStack] that should be given to the player when mid-clicking a block of [state] at [pos] with the given [ctx] in creative mode.
+     * @see DefaultContextParamTypes.INCLUDE_DATA
      */
     fun pickBlockCreative(pos: BlockPos, state: NovaBlockState, ctx: Context<BlockInteract>): ItemStack? = null
     
@@ -103,7 +105,7 @@ interface BlockBehavior : BlockBehaviorHolder {
 /**
  * Factory for creating [BlockBehavior] instances of [T] based on a [NovaBlock].
  */
-interface BlockBehaviorFactory<T : BlockBehavior> : BlockBehaviorHolder {
+fun interface BlockBehaviorFactory<T : BlockBehavior> : BlockBehaviorHolder {
     
     /**
      *  Creates a new [BlockBehavior] instance of [T] based on the given [block].

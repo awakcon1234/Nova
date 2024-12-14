@@ -2,14 +2,14 @@ package xyz.xenondevs.nova.addon.registry
 
 import xyz.xenondevs.commons.provider.Provider
 import xyz.xenondevs.nova.registry.NovaRegistries
+import xyz.xenondevs.nova.util.Key
+import xyz.xenondevs.nova.util.set
 import xyz.xenondevs.nova.world.block.tileentity.network.Network
 import xyz.xenondevs.nova.world.block.tileentity.network.node.EndPointDataHolder
 import xyz.xenondevs.nova.world.block.tileentity.network.type.LocalValidator
 import xyz.xenondevs.nova.world.block.tileentity.network.type.NetworkConstructor
 import xyz.xenondevs.nova.world.block.tileentity.network.type.NetworkGroupConstructor
 import xyz.xenondevs.nova.world.block.tileentity.network.type.NetworkType
-import xyz.xenondevs.nova.util.ResourceLocation
-import xyz.xenondevs.nova.util.set
 import kotlin.reflect.KClass
 
 interface NetworkTypeRegistry : AddonGetter {
@@ -22,7 +22,7 @@ interface NetworkTypeRegistry : AddonGetter {
         tickDelay: Provider<Int>,
         vararg holderTypes: KClass<out EndPointDataHolder>
     ): NetworkType<T> {
-        val id = ResourceLocation(addon, name)
+        val id = Key(addon, name)
         val networkType = NetworkType(
             id,
             createNetwork, createGroup, validateLocal,

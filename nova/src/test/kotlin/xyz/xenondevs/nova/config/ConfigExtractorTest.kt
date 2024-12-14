@@ -1,8 +1,9 @@
 package xyz.xenondevs.nova.config
 
 import com.google.common.jimfs.Jimfs
+import net.kyori.adventure.key.Key
 import org.junit.jupiter.api.Test
-import xyz.xenondevs.commons.provider.mutable.mutableProvider
+import xyz.xenondevs.commons.provider.mutableProvider
 import java.nio.file.Path
 import kotlin.io.path.copyTo
 import kotlin.io.path.readText
@@ -10,13 +11,15 @@ import kotlin.test.assertEquals
 
 class ConfigExtractorTest {
     
+    private val CONFIG_ID = Key.key("nova", "config")
+    
     @Test
     fun `test initial extraction`() {
         val source = source("internal-config-original.yml")
         val dest = dest()
         
         ConfigExtractor(mutableProvider(HashMap()))
-            .extract("config.yml", source, dest)
+            .extract(CONFIG_ID, source, dest)
         
         assertConfigEquals(source, dest)
     }
@@ -28,8 +31,8 @@ class ConfigExtractorTest {
         val dest = dest()
         
         val extractor = ConfigExtractor(mutableProvider(HashMap()))
-        extractor.extract("config.yml", sourceOriginal, dest)
-        extractor.extract("config.yml", sourceStripped, dest)
+        extractor.extract(CONFIG_ID, sourceOriginal, dest)
+        extractor.extract(CONFIG_ID, sourceStripped, dest)
         
         assertConfigEquals(sourceStripped, dest)
     }
@@ -41,8 +44,8 @@ class ConfigExtractorTest {
         val dest = dest()
         
         val extractor = ConfigExtractor(mutableProvider(HashMap()))
-        extractor.extract("config.yml", sourceOriginal, dest)
-        extractor.extract("config.yml", sourceAdded, dest)
+        extractor.extract(CONFIG_ID, sourceOriginal, dest)
+        extractor.extract(CONFIG_ID, sourceAdded, dest)
         
         assertConfigEquals(sourceAdded, dest)
     }
@@ -54,8 +57,8 @@ class ConfigExtractorTest {
         val dest = dest()
         
         val extractor = ConfigExtractor(mutableProvider(HashMap()))
-        extractor.extract("config.yml", sourceOriginal, dest)
-        extractor.extract("config.yml", sourceChanged, dest)
+        extractor.extract(CONFIG_ID, sourceOriginal, dest)
+        extractor.extract(CONFIG_ID, sourceChanged, dest)
         
         assertConfigEquals(sourceChanged, dest)
     }
@@ -67,9 +70,9 @@ class ConfigExtractorTest {
         val dest = dest()
         
         val extractor = ConfigExtractor(mutableProvider(HashMap()))
-        extractor.extract("config.yml", sourceOriginal, dest)
+        extractor.extract(CONFIG_ID, sourceOriginal, dest)
         source("server-config-changed-entries.yml").copyTo(dest, true) // simulate user changes
-        extractor.extract("config.yml", sourceChanged, dest)
+        extractor.extract(CONFIG_ID, sourceChanged, dest)
         
         assertConfigEquals(source("server-config-updated-expected.yml"), dest)
     }

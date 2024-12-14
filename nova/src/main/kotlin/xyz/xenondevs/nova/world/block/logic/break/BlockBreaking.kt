@@ -19,8 +19,8 @@ import org.bukkit.event.player.PlayerJoinEvent
 import org.bukkit.event.player.PlayerQuitEvent
 import xyz.xenondevs.commons.collections.removeIf
 import xyz.xenondevs.nova.LOGGER
-import xyz.xenondevs.nova.addon.AddonsInitializer
 import xyz.xenondevs.nova.config.MAIN_CONFIG
+import xyz.xenondevs.nova.config.entry
 import xyz.xenondevs.nova.context.Context
 import xyz.xenondevs.nova.context.intention.DefaultContextIntentions.BlockBreak
 import xyz.xenondevs.nova.context.param.DefaultContextParamTypes
@@ -47,13 +47,12 @@ import xyz.xenondevs.nova.world.BlockPos
 import xyz.xenondevs.nova.world.block.behavior.Breakable
 import xyz.xenondevs.nova.world.format.WorldDataManager
 import java.util.concurrent.ConcurrentHashMap
-import java.util.logging.Level
 
 private val BREAK_COOLDOWN by MAIN_CONFIG.entry<Int>("world", "block_breaking", "break_cooldown")
 
 @InternalInit(
     stage = InternalInitStage.POST_WORLD,
-    dependsOn = [AddonsInitializer::class, WorldDataManager::class]
+    dependsOn = [WorldDataManager::class]
 )
 internal object BlockBreaking : Listener, PacketListener {
     
@@ -112,7 +111,7 @@ internal object BlockBreaking : Listener, PacketListener {
                 if (!breaker.isStopped)
                     breaker.handleTick()
             } catch (e: Exception) {
-                LOGGER.log(Level.SEVERE, "An exception occurred in BlockBreaker tick", e)
+                LOGGER.error("An exception occurred in BlockBreaker tick", e)
             }
             
             return@removeIf breaker.isStopped

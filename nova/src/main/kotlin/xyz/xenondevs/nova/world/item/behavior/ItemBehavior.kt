@@ -2,6 +2,7 @@ package xyz.xenondevs.nova.world.item.behavior
 
 import net.minecraft.core.component.DataComponentMap
 import net.minecraft.core.component.DataComponentPatch
+import org.bukkit.block.Block
 import org.bukkit.entity.Entity
 import org.bukkit.entity.Player
 import org.bukkit.event.block.Action
@@ -10,10 +11,11 @@ import org.bukkit.event.entity.EntityDamageByEntityEvent
 import org.bukkit.event.inventory.InventoryClickEvent
 import org.bukkit.event.player.PlayerInteractAtEntityEvent
 import org.bukkit.event.player.PlayerItemBreakEvent
+import org.bukkit.event.player.PlayerItemConsumeEvent
 import org.bukkit.event.player.PlayerItemDamageEvent
 import org.bukkit.inventory.ItemStack
 import xyz.xenondevs.commons.provider.Provider
-import xyz.xenondevs.commons.provider.immutable.provider
+import xyz.xenondevs.commons.provider.provider
 import xyz.xenondevs.nova.network.event.serverbound.ServerboundPlayerActionPacketEvent
 import xyz.xenondevs.nova.serialization.cbf.NamespacedCompound
 import xyz.xenondevs.nova.world.block.event.BlockBreakActionEvent
@@ -61,13 +63,15 @@ interface ItemBehavior : ItemBehaviorHolder {
     fun handleInventoryClickOnCursor(player: Player, itemStack: ItemStack, event: InventoryClickEvent) = Unit
     fun handleInventoryHotbarSwap(player: Player, itemStack: ItemStack, event: InventoryClickEvent) = Unit
     fun handleBlockBreakAction(player: Player, itemStack: ItemStack, event: BlockBreakActionEvent) = Unit
+    fun handleConsume(player: Player, itemStack: ItemStack, event: PlayerItemConsumeEvent) = Unit
     fun handleRelease(player: Player, itemStack: ItemStack, event: ServerboundPlayerActionPacketEvent) = Unit
+    fun handleInventoryTick(player: Player, itemStack: ItemStack, slot: Int) = Unit
     
     /**
-     * Modifies the damage when [player] is breaking a block with [itemStack].
+     * Modifies the [damage] when [player] is breaking a [block] with [itemStack].
      * This damage is applied to the block every tick until 1.0 is reached, at which point the block is destroyed.
      */
-    fun modifyBlockDamage(player: Player, itemStack: ItemStack, damage: Double): Double = damage
+    fun modifyBlockDamage(player: Player, itemStack: ItemStack, block: Block, damage: Double): Double = damage
     
     /**
      * Updates the client-side [itemStack] that is to be viewed by [player] and has server-side [data].
@@ -81,6 +85,6 @@ interface ItemBehavior : ItemBehaviorHolder {
     
 }
 
-interface ItemBehaviorFactory<T : ItemBehavior> : ItemBehaviorHolder {
+fun interface ItemBehaviorFactory<T : ItemBehavior> : ItemBehaviorHolder {
     fun create(item: NovaItem): T
 }

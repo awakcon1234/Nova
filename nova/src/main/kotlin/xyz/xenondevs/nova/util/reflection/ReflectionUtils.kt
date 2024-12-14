@@ -9,6 +9,8 @@ import xyz.xenondevs.commons.collections.mapToArray
 import xyz.xenondevs.nova.util.ServerSoftware
 import xyz.xenondevs.nova.util.ServerUtils
 import xyz.xenondevs.nova.util.reflection.ReflectionRegistry.CLASS_LOADER_DEFINE_CLASS_METHOD
+import java.lang.invoke.MethodHandle
+import java.lang.invoke.MethodHandles
 import java.lang.reflect.Constructor
 import java.lang.reflect.Field
 import java.lang.reflect.Method
@@ -73,14 +75,32 @@ internal object ReflectionUtils {
     }
     
     @JvmStatic
-    fun getMethodByName(clazz: KClass<*>, declared: Boolean, methodName: String): Method =
-        getMethodByName(clazz.java, declared, methodName)
+    fun getMethodByName(clazz: KClass<*>, methodName: String): Method =
+        getMethodByName(clazz.java, methodName)
     
     @JvmStatic
-    fun getMethodByName(clazz: Class<*>, declared: Boolean, methodName: String): Method {
-        val method = if (declared) clazz.declaredMethods.first { it.name == methodName } else clazz.methods.first { it.name == methodName }
-        if (declared) method.isAccessible = true
+    fun getMethodByName(clazz: Class<*>, methodName: String): Method {
+        val method = clazz.declaredMethods.first { it.name == methodName }
+        method.isAccessible = true
         return method
+    }
+    
+    @JvmStatic
+    fun getMethodHandle(clazz: KClass<*>, methodName: String, vararg args: KClass<*>): MethodHandle {
+        val method = getMethod(clazz, methodName, *args)
+        return MethodHandles.privateLookupIn(clazz.java, MethodHandles.lookup()).unreflect(method)
+    }
+    
+    @JvmStatic
+    fun getGetterHandle(clazz: KClass<*>, fieldName: String): MethodHandle {
+        val field = getField(clazz, fieldName)
+        return MethodHandles.privateLookupIn(clazz.java, MethodHandles.lookup()).unreflectGetter(field)
+    }
+    
+    @JvmStatic
+    fun getSetterHandle(clazz: KClass<*>, fieldName: String): MethodHandle {
+        val field = getField(clazz, fieldName)
+        return MethodHandles.privateLookupIn(clazz.java, MethodHandles.lookup()).unreflectSetter(field)
     }
     
     @JvmStatic
@@ -114,6 +134,12 @@ internal object ReflectionUtils {
     }
     
     @JvmStatic
+    fun getConstructorMethodHandle(clazz: KClass<*>, vararg args: KClass<*>): MethodHandle {
+        val constructor = getConstructor(clazz, *args)
+        return MethodHandles.privateLookupIn(clazz.java, MethodHandles.lookup()).unreflectConstructor(constructor)
+    }
+    
+    @JvmStatic
     fun getField(clazz: KClass<*>, declared: Boolean, name: String): Field =
         getField(clazz.java, declared, name)
     
@@ -137,7 +163,7 @@ internal object ReflectionUtils {
     
     @JvmStatic
     fun getFieldOrNull(clazz: Class<*>, name: String): Field? {
-         try {
+        try {
             return getField(clazz, name)
         } catch (_: NoSuchFieldException) {
             return null

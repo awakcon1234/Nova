@@ -16,19 +16,19 @@ import xyz.xenondevs.nova.world.block.DefaultBlocks
 import xyz.xenondevs.nova.world.block.behavior.Waterloggable
 import xyz.xenondevs.nova.world.format.WorldDataManager
 
-private val FLOWING_FLUID_CAN_HOLD_FLUID = ReflectionUtils.getMethod(
+private val FLOWING_FLUID_CAN_HOLD_SPECIFIC_FLUID = ReflectionUtils.getMethod(
     FlowingFluid::class,
-    "canHoldFluid",
+    "canHoldSpecificFluid",
     BlockGetter::class, BlockPos::class, BlockState::class, Fluid::class
 )
 
 internal object FluidFlowPatch : MultiTransformer(FlowingFluid::class) {
     
     override fun transform() {
-        VirtualClassPath[FLOWING_FLUID_CAN_HOLD_FLUID].instructions.insert(buildInsnList {
+        VirtualClassPath[FLOWING_FLUID_CAN_HOLD_SPECIFIC_FLUID].instructions.insert(buildInsnList {
             addLabel()
-            aLoad(1) // level
-            aLoad(2) // pos
+            aLoad(0) // level
+            aLoad(1) // pos
             invokeStatic(::cannotHoldFluid)
             
             // if (cannotHoldFluid(level, pos, state)) return false

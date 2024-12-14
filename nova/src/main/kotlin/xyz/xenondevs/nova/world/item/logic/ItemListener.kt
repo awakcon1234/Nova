@@ -1,6 +1,7 @@
 package xyz.xenondevs.nova.world.item.logic
 
 import net.minecraft.network.protocol.game.ServerboundPlayerActionPacket
+import org.bukkit.Bukkit
 import org.bukkit.entity.Player
 import org.bukkit.event.EventHandler
 import org.bukkit.event.EventPriority
@@ -11,6 +12,7 @@ import org.bukkit.event.inventory.ClickType
 import org.bukkit.event.inventory.InventoryClickEvent
 import org.bukkit.event.player.PlayerInteractAtEntityEvent
 import org.bukkit.event.player.PlayerItemBreakEvent
+import org.bukkit.event.player.PlayerItemConsumeEvent
 import org.bukkit.event.player.PlayerItemDamageEvent
 import org.bukkit.inventory.EquipmentSlot
 import org.bukkit.inventory.ItemStack
@@ -24,18 +26,19 @@ import xyz.xenondevs.nova.network.event.PacketListener
 import xyz.xenondevs.nova.network.event.registerPacketListener
 import xyz.xenondevs.nova.network.event.serverbound.ServerboundPlayerActionPacketEvent
 import xyz.xenondevs.nova.network.event.serverbound.ServerboundUseItemPacketEvent
-import xyz.xenondevs.nova.world.player.WrappedPlayerInteractEvent
-import xyz.xenondevs.nova.world.player.equipment.ArmorEquipEvent
 import xyz.xenondevs.nova.util.bukkitEquipmentSlot
 import xyz.xenondevs.nova.util.item.novaItem
 import xyz.xenondevs.nova.util.item.takeUnlessEmpty
 import xyz.xenondevs.nova.util.registerEvents
+import xyz.xenondevs.nova.util.runTaskTimer
 import xyz.xenondevs.nova.world.block.event.BlockBreakActionEvent
+import xyz.xenondevs.nova.world.player.WrappedPlayerInteractEvent
+import xyz.xenondevs.nova.world.player.equipment.ArmorEquipEvent
 import java.util.*
 
 @InternalInit(
     stage = InternalInitStage.POST_WORLD,
-    dispatcher = Dispatcher.ASYNC
+    dispatcher = Dispatcher.SYNC
 )
 internal object ItemListener : Listener, PacketListener {
     
@@ -45,6 +48,17 @@ internal object ItemListener : Listener, PacketListener {
     private fun init() {
         registerEvents()
         registerPacketListener()
+        runTaskTimer(0, 1, ::handleTick)
+    }
+    
+    private fun handleTick() {
+        for (player in Bukkit.getOnlinePlayers()) {
+            for ((slot, itemStack) in player.inventory.contents.withIndex()) {
+                val novaItem = itemStack?.novaItem
+                    ?: continue
+                novaItem.handleInventoryTick(player, itemStack, slot)
+            }
+        }
     }
     
     @EventHandler(priority = EventPriority.NORMAL)
@@ -122,6 +136,14 @@ internal object ItemListener : Listener, PacketListener {
         val item = event.player.inventory.itemInMainHand
         
         item.novaItem?.handleBlockBreakAction(player, item, event)
+    }
+    
+    @EventHandler(priority = EventPriority.HIGHEST)
+    private fun handleConsume(event: PlayerItemConsumeEvent) {
+        val player = event.player
+        val item = event.item
+        
+        item.novaItem?.handleConsume(player, item, event)
     }
     
     // This method stores the last used item for the RELEASE_USE_ITEM action below

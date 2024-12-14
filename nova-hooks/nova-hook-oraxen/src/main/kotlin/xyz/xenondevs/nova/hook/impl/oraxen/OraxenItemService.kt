@@ -11,8 +11,8 @@ import io.th0rgal.oraxen.mechanics.provided.gameplay.noteblock.NoteBlockMechanic
 import io.th0rgal.oraxen.mechanics.provided.gameplay.stringblock.StringBlockMechanic
 import io.th0rgal.oraxen.utils.blocksounds.BlockSounds
 import io.th0rgal.oraxen.utils.drops.Drop
+import net.kyori.adventure.key.Key
 import net.kyori.adventure.text.Component
-import net.minecraft.resources.ResourceLocation
 import org.bukkit.Location
 import org.bukkit.NamespacedKey
 import org.bukkit.Rotation
@@ -20,14 +20,15 @@ import org.bukkit.SoundCategory
 import org.bukkit.block.Block
 import org.bukkit.block.BlockFace
 import org.bukkit.inventory.ItemStack
-import xyz.xenondevs.nova.world.item.recipe.ModelDataTest
-import xyz.xenondevs.nova.world.item.recipe.SingleItemTest
-import xyz.xenondevs.nova.resources.ResourcePath
 import xyz.xenondevs.nova.integration.Hook
 import xyz.xenondevs.nova.integration.customitems.CustomBlockType
 import xyz.xenondevs.nova.integration.customitems.CustomItemService
 import xyz.xenondevs.nova.integration.customitems.CustomItemType
+import xyz.xenondevs.nova.resources.ResourcePath
+import xyz.xenondevs.nova.resources.ResourceType
 import xyz.xenondevs.nova.util.item.customModelData
+import xyz.xenondevs.nova.world.item.recipe.ModelDataTest
+import xyz.xenondevs.nova.world.item.recipe.SingleItemTest
 import xyz.xenondevs.nova.world.pos
 import kotlin.random.Random
 import kotlin.streams.asSequence
@@ -168,15 +169,15 @@ internal object OraxenItemService : CustomItemService {
         return getOraxenDrop(block)?.isToolEnough(tool) ?: return null
     }
     
-    override fun getBlockItemModelPaths(): Map<ResourceLocation, ResourcePath> {
+    override fun getBlockItemModelPaths(): Map<Key, ResourcePath<ResourceType.Model>> {
         return OraxenItems.entryStream().asSequence()
             .filter { (id, builder) -> id != null && builder.oraxenMeta?.modelName != null }
             .filter { (id, _) -> BLOCK_MECHANIC_FACTORIES.any { it.getMechanic(id) != null } }
             .associateTo(HashMap()) { (name, builder) ->
                 val modelName = builder.oraxenMeta.modelName
                 
-                val id = ResourceLocation.fromNamespaceAndPath("oraxen", name)
-                val path = ResourcePath("oraxen_converted", "oraxen/$modelName")
+                val id = Key.key("oraxen", name)
+                val path = ResourcePath(ResourceType.Model, "oraxen_converted", "oraxen/$modelName")
                 
                 id to path
             }

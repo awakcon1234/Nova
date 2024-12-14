@@ -3,26 +3,35 @@ package xyz.xenondevs.nova.patch.impl.block
 import net.minecraft.core.BlockPos
 import net.minecraft.core.Direction
 import net.minecraft.server.level.ServerLevel
+import net.minecraft.server.network.ServerGamePacketListenerImpl
 import net.minecraft.util.RandomSource
 import net.minecraft.world.entity.Entity
+import net.minecraft.world.entity.player.Player
+import net.minecraft.world.item.ItemStack
 import net.minecraft.world.level.Level
-import net.minecraft.world.level.LevelAccessor
+import net.minecraft.world.level.LevelReader
+import net.minecraft.world.level.ScheduledTickAccess
 import net.minecraft.world.level.block.Block
 import net.minecraft.world.level.block.state.BlockBehaviour
 import net.minecraft.world.level.block.state.BlockBehaviour.BlockStateBase
 import net.minecraft.world.level.block.state.BlockState
-import org.bukkit.block.data.BlockData
+import net.minecraft.world.level.redstone.Orientation
+import org.objectweb.asm.Opcodes
+import org.objectweb.asm.tree.MethodInsnNode
 import xyz.xenondevs.bytebase.jvm.VirtualClassPath
+import xyz.xenondevs.bytebase.util.replaceEvery
 import xyz.xenondevs.nova.LOGGER
+import xyz.xenondevs.nova.context.Context
+import xyz.xenondevs.nova.context.intention.DefaultContextIntentions
+import xyz.xenondevs.nova.context.param.DefaultContextParamTypes
 import xyz.xenondevs.nova.patch.MultiTransformer
-import xyz.xenondevs.nova.util.nmsBlockState
 import xyz.xenondevs.nova.util.toNovaPos
+import xyz.xenondevs.nova.util.unwrap
 import xyz.xenondevs.nova.world.block.state.model.BackingStateConfig
 import xyz.xenondevs.nova.world.block.state.model.DisplayEntityBlockModelData
 import xyz.xenondevs.nova.world.format.WorldDataManager
 import java.lang.invoke.MethodHandles
 import java.lang.invoke.MethodType
-import java.util.logging.Level as LogLevel
 
 private val BLOCK_BEHAVIOR_LOOKUP = MethodHandles
     .privateLookupIn(BlockBehaviour::class.java, MethodHandles.lookup())
@@ -36,7 +45,7 @@ private val BLOCK_BEHAVIOR_NEIGHBOR_CHANGED = BLOCK_BEHAVIOR_LOOKUP.findVirtual(
         Level::class.java,
         BlockPos::class.java,
         Block::class.java,
-        BlockPos::class.java,
+        Orientation::class.java,
         Boolean::class.java
     )
 )
@@ -47,11 +56,13 @@ private val BLOCK_BEHAVIOR_UPDATE_SHAPE = BLOCK_BEHAVIOR_LOOKUP.findVirtual(
     MethodType.methodType(
         BlockState::class.java,
         BlockState::class.java,
-        Direction::class.java,
-        BlockState::class.java,
-        LevelAccessor::class.java,
+        LevelReader::class.java,
+        ScheduledTickAccess::class.java,
         BlockPos::class.java,
-        BlockPos::class.java
+        Direction::class.java,
+        BlockPos::class.java,
+        BlockState::class.java,
+        RandomSource::class.java
     )
 )
 
@@ -79,32 +90,40 @@ private val BLOCK_BEHAVIOR_ENTITY_INSIDE = BLOCK_BEHAVIOR_LOOKUP.findVirtual(
     )
 )
 
-internal object BlockBehaviorPatches : MultiTransformer(BlockStateBase::class) {
+internal object BlockBehaviorPatches : MultiTransformer(BlockStateBase::class, ServerGamePacketListenerImpl::class) {
     
     override fun transform() {
         VirtualClassPath[BlockStateBase::handleNeighborChanged].delegateStatic(::handleNeighborChanged)
         VirtualClassPath[BlockStateBase::updateShape].delegateStatic(::updateShape)
         VirtualClassPath[BlockStateBase::tick].delegateStatic(::tick)
         VirtualClassPath[BlockStateBase::entityInside].delegateStatic(::entityInside)
+        VirtualClassPath[ServerGamePacketListenerImpl::handlePickItemFromBlock].replaceEvery(
+            0, 0,
+            {
+                aLoad(0)
+                getField(ServerGamePacketListenerImpl::player)
+                invokeStatic(::getCloneItemStack)
+            }
+        ) { it.opcode == Opcodes.INVOKEVIRTUAL && (it as MethodInsnNode).name == "getCloneItemStack" }
     }
     
     @JvmStatic
-    fun handleNeighborChanged(thisRef: BlockStateBase, level: Level, pos: BlockPos, sourceBlock: Block, sourcePos: BlockPos, notify: Boolean) {
+    fun handleNeighborChanged(thisRef: BlockStateBase, level: Level, pos: BlockPos, sourceBlock: Block, wireOrientation: Orientation?, notify: Boolean) {
         val novaPos = pos.toNovaPos(level.world)
         val novaState = WorldDataManager.getBlockState(novaPos)
         if (novaState != null) {
             try {
-                novaState.block.handleNeighborChanged(novaPos, novaState, sourcePos.toNovaPos(level.world))
+                novaState.block.handleNeighborChanged(novaPos, novaState)
             } catch (e: Exception) {
-                LOGGER.log(LogLevel.SEVERE, "Failed to handle neighbor change for $novaState at $novaPos", e)
+                LOGGER.error("Failed to handle neighbor change for $novaState at $novaPos", e)
             }
         } else {
-            BLOCK_BEHAVIOR_NEIGHBOR_CHANGED.invoke(thisRef.block, thisRef, level, pos, sourceBlock, sourcePos, notify)
+            BLOCK_BEHAVIOR_NEIGHBOR_CHANGED.invoke(thisRef.block, thisRef, level, pos, sourceBlock, wireOrientation, notify)
         }
     }
     
     @JvmStatic
-    fun updateShape(thisRef: BlockStateBase, direction: Direction, neighborState: BlockState, level: LevelAccessor, pos: BlockPos, neighborPos: BlockPos): BlockState {
+    fun updateShape(thisRef: BlockStateBase, level: LevelReader, tickView: ScheduledTickAccess, pos: BlockPos, direction: Direction, neighborPos: BlockPos, neighborState: BlockState, random: RandomSource): BlockState {
         if (level is ServerLevel) { // fixme: needs to support WorldGenRegion
             val novaPos = pos.toNovaPos(level.world)
             val novaState = WorldDataManager.getBlockState(novaPos)
@@ -115,11 +134,11 @@ internal object BlockBehaviorPatches : MultiTransformer(BlockStateBase::class) {
                         WorldDataManager.setBlockState(novaPos, newState)
                         return when (val info = newState.modelProvider.info) {
                             is BackingStateConfig -> info.vanillaBlockState
-                            is BlockData -> info.nmsBlockState
+                            is BlockState -> info
                             is DisplayEntityBlockModelData -> {
                                 novaState.modelProvider.unload(novaPos)
                                 newState.modelProvider.load(novaPos)
-                                info.hitboxType.nmsBlockState
+                                info.hitboxType
                             }
                             
                             else -> throw UnsupportedOperationException()
@@ -128,12 +147,12 @@ internal object BlockBehaviorPatches : MultiTransformer(BlockStateBase::class) {
                     
                     return thisRef as BlockState
                 } catch (e: Exception) {
-                    LOGGER.log(LogLevel.SEVERE, "Failed to update shape for $novaState at $novaPos", e)
+                    LOGGER.error("Failed to update shape for $novaState at $novaPos", e)
                 }
             }
         }
         
-        return BLOCK_BEHAVIOR_UPDATE_SHAPE.invoke(thisRef.block, thisRef, direction, neighborState, level, pos, neighborPos) as BlockState
+        return BLOCK_BEHAVIOR_UPDATE_SHAPE.invoke(thisRef.block, thisRef, level, tickView, pos, direction, neighborPos, neighborState, random) as BlockState
     }
     
     @JvmStatic
@@ -144,7 +163,7 @@ internal object BlockBehaviorPatches : MultiTransformer(BlockStateBase::class) {
             try {
                 novaState.block.handleScheduledTick(novaPos, novaState)
             } catch (e: Exception) {
-                LOGGER.log(LogLevel.SEVERE, "Failed to handle vanilla scheduled tick for $novaState at $pos", e)
+                LOGGER.error("Failed to handle vanilla scheduled tick for $novaState at $pos", e)
             }
         } else {
             BLOCK_BEHAVIOR_TICK.invoke(thisRef.block, thisRef, level, pos, random)
@@ -159,11 +178,32 @@ internal object BlockBehaviorPatches : MultiTransformer(BlockStateBase::class) {
             try {
                 novaState.block.handleEntityInside(novaPos, novaState, entity.bukkitEntity)
             } catch (e: Exception) {
-                LOGGER.log(LogLevel.SEVERE, "Failed to handle entity inside for $novaState at $novaPos", e)
+                LOGGER.error("Failed to handle entity inside for $novaState at $novaPos", e)
             }
         } else {
             BLOCK_BEHAVIOR_ENTITY_INSIDE.invoke(thisRef.block, thisRef, level, pos, entity)
         }
+    }
+    
+    @JvmStatic
+    fun getCloneItemStack(blockState: BlockState, world: ServerLevel, pos: BlockPos, includeData: Boolean, player: Player): ItemStack {
+        val novaPos = pos.toNovaPos(world.world)
+        val novaState = WorldDataManager.getBlockState(novaPos)
+        if (novaState != null) {
+            try {
+                val ctx = Context.intention(DefaultContextIntentions.BlockInteract)
+                    .param(DefaultContextParamTypes.BLOCK_POS, novaPos)
+                    .param(DefaultContextParamTypes.BLOCK_STATE_NOVA, novaState)
+                    .param(DefaultContextParamTypes.INCLUDE_DATA, includeData)
+                    .param(DefaultContextParamTypes.SOURCE_ENTITY, player.bukkitEntity)
+                    .build()
+                return novaState.block.pickBlockCreative(novaPos, novaState, ctx).unwrap()
+            } catch (e: Exception) {
+                LOGGER.error("Failed to get clone item stack for $novaState at $novaPos", e)
+            }
+        }
+        
+        return blockState.getCloneItemStack(world, pos, includeData)
     }
     
 }

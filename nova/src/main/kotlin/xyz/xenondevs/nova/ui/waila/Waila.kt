@@ -1,13 +1,14 @@
 package xyz.xenondevs.nova.ui.waila
 
+import net.kyori.adventure.key.Key
 import net.kyori.adventure.text.Component
 import net.kyori.adventure.text.format.NamedTextColor
-import net.minecraft.resources.ResourceLocation
 import org.bukkit.block.Block
 import org.bukkit.block.data.BlockData
 import org.bukkit.entity.Player
-import xyz.xenondevs.commons.provider.immutable.mapEach
+import xyz.xenondevs.commons.provider.mapEach
 import xyz.xenondevs.nova.config.MAIN_CONFIG
+import xyz.xenondevs.nova.config.entry
 import xyz.xenondevs.nova.integration.customitems.CustomItemServiceManager
 import xyz.xenondevs.nova.registry.NovaRegistries.WAILA_INFO_PROVIDER
 import xyz.xenondevs.nova.ui.overlay.bossbar.BossBarOverlayManager
@@ -19,7 +20,6 @@ import xyz.xenondevs.nova.ui.waila.info.line.ToolLine
 import xyz.xenondevs.nova.ui.waila.overlay.WailaOverlayCompound
 import xyz.xenondevs.nova.util.data.WildcardUtils
 import xyz.xenondevs.nova.util.id
-import xyz.xenondevs.nova.util.name
 import xyz.xenondevs.nova.util.serverTick
 import xyz.xenondevs.nova.world.BlockPos
 import xyz.xenondevs.nova.world.format.WorldDataManager
@@ -124,7 +124,7 @@ internal class Waila(val player: Player) {
     
     @Suppress("DEPRECATION")
     private fun getCustomItemServiceInfo(player: Player, block: Block): WailaInfo? {
-        val blockId = CustomItemServiceManager.getId(block)?.let { runCatching { ResourceLocation.parse(it) }.getOrNull() } ?: return null
+        val blockId = CustomItemServiceManager.getId(block)?.let { runCatching { Key.key(it) }.getOrNull() } ?: return null
         val blockName = CustomItemServiceManager.getName(block, player.locale) ?: return null
         
         val lines = ArrayList<WailaLine>()
@@ -135,9 +135,9 @@ internal class Waila(val player: Player) {
         return WailaInfo(blockId, lines)
     }
     
-    private fun isBlacklisted(id: ResourceLocation) =
+    private fun isBlacklisted(id: Key) =
         BLACKLISTED_BLOCKS.any { (namespaceRegex, nameRegex) ->
-            namespaceRegex.matches(id.namespace) && nameRegex.matches(id.name)
+            namespaceRegex.matches(id.namespace()) && nameRegex.matches(id.value())
         }
     
 }

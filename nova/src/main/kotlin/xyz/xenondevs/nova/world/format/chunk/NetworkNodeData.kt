@@ -2,7 +2,7 @@ package xyz.xenondevs.nova.world.format.chunk
 
 import com.google.common.collect.HashBasedTable
 import com.google.common.collect.Table
-import net.minecraft.resources.ResourceLocation
+import net.kyori.adventure.key.Key
 import org.bukkit.OfflinePlayer
 import org.bukkit.block.BlockFace
 import xyz.xenondevs.cbf.io.ByteReader
@@ -14,8 +14,8 @@ import xyz.xenondevs.commons.guava.component3
 import xyz.xenondevs.commons.guava.iterator
 import xyz.xenondevs.commons.guava.set
 import xyz.xenondevs.nova.registry.NovaRegistries
+import xyz.xenondevs.nova.util.getValueOrThrow
 import xyz.xenondevs.nova.world.block.tileentity.network.type.NetworkType
-import xyz.xenondevs.nova.util.getOrThrow
 import java.util.*
 
 sealed interface NetworkNodeData {
@@ -29,7 +29,7 @@ sealed interface NetworkNodeData {
 }
 
 data class NetworkBridgeData(
-    val typeId: ResourceLocation,
+    val typeId: Key,
     override val owner: UUID,
     override val connections: MutableMap<NetworkType<*>, MutableSet<BlockFace>> = HashMap(),
     val networks: MutableMap<NetworkType<*>, UUID> = HashMap(),
@@ -38,7 +38,7 @@ data class NetworkBridgeData(
 ) : NetworkNodeData {
     
     constructor(
-        typeId: ResourceLocation,
+        typeId: Key,
         owner: OfflinePlayer?,
         connections: MutableMap<NetworkType<*>, MutableSet<BlockFace>> = HashMap(),
         networks: MutableMap<NetworkType<*>, UUID> = HashMap(),
@@ -66,7 +66,7 @@ data class NetworkBridgeData(
         
         fun read(reader: ByteReader): NetworkBridgeData =
             NetworkBridgeData(
-                ResourceLocation.parse(reader.readString()),
+                Key.key(reader.readString()),
                 reader.readUUID(),
                 reader.readNetworkTypeCubeFaceSetMap(),
                 reader.readNetworkTypeUUIDMap(),
@@ -117,7 +117,7 @@ private fun ByteReader.readNetworkTypeCubeFaceSetMap(): MutableMap<NetworkType<*
     val size = readVarInt()
     val map = HashMap<NetworkType<*>, MutableSet<BlockFace>>(size)
     repeat(size) {
-        val networkType = NovaRegistries.NETWORK_TYPE.getOrThrow(readString())
+        val networkType = NovaRegistries.NETWORK_TYPE.getValueOrThrow(readString())
         val set = readCubeFaceSet()
         
         map[networkType] = set
@@ -138,7 +138,7 @@ private fun ByteReader.readNetworkTypeBlockFaceUUIDTable(): Table<NetworkType<*>
     val size = readVarInt()
     val table = HashBasedTable.create<NetworkType<*>, BlockFace, UUID>()
     repeat(size) {
-        val networkType = NovaRegistries.NETWORK_TYPE.getOrThrow(readString())
+        val networkType = NovaRegistries.NETWORK_TYPE.getValueOrThrow(readString())
         val face = BlockFace.entries[readByte().toInt()]
         val uuid = readUUID()
         
@@ -169,7 +169,7 @@ private fun ByteReader.readNetworkTypeUUIDMap(): MutableMap<NetworkType<*>, UUID
     val size = readVarInt()
     val map = HashMap<NetworkType<*>, UUID>(size)
     repeat(size) {
-        val networkType = NovaRegistries.NETWORK_TYPE.getOrThrow(readString())
+        val networkType = NovaRegistries.NETWORK_TYPE.getValueOrThrow(readString())
         val uuid = readUUID()
         
         map[networkType] = uuid
@@ -189,7 +189,7 @@ private fun ByteReader.readNetworkTypeSet(): MutableSet<NetworkType<*>> {
     val size = readVarInt()
     val set = HashSet<NetworkType<*>>(size)
     repeat(size) {
-        set += NovaRegistries.NETWORK_TYPE.getOrThrow(readString())
+        set += NovaRegistries.NETWORK_TYPE.getValueOrThrow(readString())
     }
     
     return set

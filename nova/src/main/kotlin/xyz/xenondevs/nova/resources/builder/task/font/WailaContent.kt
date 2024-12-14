@@ -1,20 +1,20 @@
 package xyz.xenondevs.nova.resources.builder.task.font
 
+import net.kyori.adventure.key.Key
 import org.bukkit.Material
 import xyz.xenondevs.commons.collections.enumMapOf
 import xyz.xenondevs.nova.LOGGER
+import xyz.xenondevs.nova.integration.customitems.CustomItemServiceManager
 import xyz.xenondevs.nova.resources.ResourcePath
+import xyz.xenondevs.nova.resources.ResourceType
 import xyz.xenondevs.nova.resources.builder.AssetPack
 import xyz.xenondevs.nova.resources.builder.ResourcePackBuilder
 import xyz.xenondevs.nova.resources.builder.ResourcePackBuilder.Companion.ASSETS_DIR
 import xyz.xenondevs.nova.resources.builder.task.BuildStage
 import xyz.xenondevs.nova.resources.builder.task.PackTask
 import xyz.xenondevs.nova.resources.lookup.ResourceLookups
-import xyz.xenondevs.nova.integration.customitems.CustomItemServiceManager
 import xyz.xenondevs.nova.ui.waila.WailaManager
-import xyz.xenondevs.nova.util.name
 import xyz.xenondevs.renderer.MinecraftModelRenderer
-import java.util.logging.Level
 import kotlin.io.path.copyTo
 import kotlin.io.path.createDirectories
 import kotlin.io.path.exists
@@ -45,6 +45,7 @@ private val MATERIAL_TEXTURES: Map<Material, String> = enumMapOf(
     Material.WAXED_WEATHERED_COPPER_DOOR to "item/weathered_copper_door",
     Material.WAXED_OXIDIZED_COPPER_DOOR to "item/oxidized_copper_door",
     Material.WAXED_EXPOSED_COPPER_DOOR to "item/exposed_copper_door",
+    Material.PALE_OAK_DOOR to "item/pale_oak_door",
     
     // signs
     Material.OAK_SIGN to "item/oak_sign",
@@ -58,6 +59,7 @@ private val MATERIAL_TEXTURES: Map<Material, String> = enumMapOf(
     Material.WARPED_SIGN to "item/warped_sign",
     Material.BAMBOO_SIGN to "item/bamboo_sign",
     Material.CHERRY_SIGN to "item/cherry_sign",
+    Material.PALE_OAK_SIGN to "item/pale_oak_sign",
     
     // hanging signs
     Material.OAK_HANGING_SIGN to "item/oak_hanging_sign",
@@ -71,6 +73,7 @@ private val MATERIAL_TEXTURES: Map<Material, String> = enumMapOf(
     Material.WARPED_HANGING_SIGN to "item/warped_hanging_sign",
     Material.BAMBOO_HANGING_SIGN to "item/bamboo_hanging_sign",
     Material.CHERRY_HANGING_SIGN to "item/cherry_hanging_sign",
+    Material.PALE_OAK_HANGING_SIGN to "item/pale_oak_hanging_sign",
     
     // foliage
     Material.OAK_SAPLING to "block/oak_sapling",
@@ -82,6 +85,7 @@ private val MATERIAL_TEXTURES: Map<Material, String> = enumMapOf(
     Material.CHERRY_SAPLING to "block/cherry_sapling",
     Material.MANGROVE_PROPAGULE to "block/mangrove_propagule",
     Material.BAMBOO_SAPLING to "block/bamboo_stage0",
+    Material.PALE_OAK_SAPLING to "block/pale_oak_sapling",
     Material.DEAD_BUSH to "block/dead_bush",
     Material.SEAGRASS to "block/seagrass",
     Material.SEA_PICKLE to "block/sea_pickle",
@@ -96,6 +100,7 @@ private val MATERIAL_TEXTURES: Map<Material, String> = enumMapOf(
     Material.SUGAR_CANE to "block/sugar_cane",
     Material.PUMPKIN_STEM to "item/pumpkin_seeds",
     Material.MELON_STEM to "item/melon_seeds",
+    Material.PALE_HANGING_MOSS to "block/pale_hanging_moss",
     
     // flowers
     Material.DANDELION to "block/dandelion",
@@ -119,6 +124,8 @@ private val MATERIAL_TEXTURES: Map<Material, String> = enumMapOf(
     Material.PINK_PETALS to "item/pink_petals",
     Material.PITCHER_CROP to "item/pitcher_plant",
     Material.PITCHER_PLANT to "item/pitcher_plant",
+    Material.OPEN_EYEBLOSSOM to "block/open_eyeblossom",
+    Material.CLOSED_EYEBLOSSOM to "block/closed_eyeblossom",
     
     // mushrooms
     Material.BROWN_MUSHROOM to "block/brown_mushroom",
@@ -219,7 +226,7 @@ class WailaContent internal constructor(
     @PackTask(stage = BuildStage.POST_WORLD, runBefore = ["FontContent#write"])
     private fun write() {
         if (WailaManager.ENABLED) {
-            builder.getHolder<MovedFontContent>().requestMovedFonts(ResourcePath("nova", "waila"), 1..19)
+            builder.getHolder<MovedFontContent>().requestMovedFonts(ResourcePath(ResourceType.Font, "nova", "waila"), 1..19)
             writeHardcodedTextures()
             builder.assetPacks.forEach(::writePackTextures)
             renderCustomItemServiceBlocks()
@@ -239,41 +246,43 @@ class WailaContent internal constructor(
             
             CustomItemServiceManager.getBlockItemModelPaths().forEach { (id, path) ->
                 try {
-                    val file = ResourcePackBuilder.PACK_DIR.resolve("assets/nova/textures/waila_generated/${id.namespace}/${id.name}.png")
+                    val file = ResourcePackBuilder.PACK_DIR.resolve("assets/nova/textures/waila_generated/${id.namespace()}/${id.value()}.png")
                     file.parent.createDirectories()
                     renderer.renderModelToFile(path.toString(), file)
-                    addEntry(id.toString(), ResourcePath("nova", "waila_generated/${id.namespace}/${id.name}.png"), SIZE, ASCENT)
+                    addEntry(id, ResourcePath(ResourceType.FontTexture, "nova", "waila_generated/${id.namespace()}/${id.value()}.png"), SIZE, ASCENT)
                     count++
                 } catch (e: Exception) {
-                    LOGGER.log(Level.WARNING, "Failed to render $id ($path) ", e)
+                    LOGGER.warn("Failed to render $id ($path) ", e)
                 }
             }
         } catch (e: Exception) {
-            LOGGER.log(Level.SEVERE, "Failed to render WAILA textures for custom item services. (Misconfigured base packs?)", e)
+            LOGGER.error("Failed to render WAILA textures for custom item services. (Misconfigured base packs?)", e)
         } finally {
             LOGGER.info("Rendered $count WAILA textures")
         }
     }
     
     private fun writeHardcodedTextures() {
-        fun copyMCTexture(path: ResourcePath): ResourcePath {
-            val from = ResourcePackBuilder.MCASSETS_DIR.resolve("assets/${path.namespace}/textures/${path.path}")
-            val name = path.path.substringAfterLast('/')
-            val to = ResourcePackBuilder.PACK_DIR.resolve("assets/nova/textures/waila_generated/$name")
-            to.parent.createDirectories()
-            from.copyTo(to, overwrite = true)
+        fun copyMCTexture(from: ResourcePath<ResourceType.Texture>): ResourcePath<ResourceType.FontTexture> {
+            val name = from.path.substringAfterLast('/')
+            val to = ResourcePath(ResourceType.FontTexture, "nova", "waila_generated/$name.png")
             
-            return ResourcePath("nova", "waila_generated/$name")
+            val fromFile = builder.resolveVanilla(from)
+            val toFile = builder.resolve(to)
+            toFile.parent.createDirectories()
+            fromFile.copyTo(toFile, overwrite = true)
+            
+            return to
         }
         
         MATERIAL_TEXTURES.forEach { (material, texture) ->
             val name = material.name.lowercase()
-            val path = ResourcePath.of("$texture.png")
-            addEntry(ResourcePath("minecraft", name), copyMCTexture(path), SIZE, ASCENT)
+            val path = ResourcePath.of(ResourceType.FontTexture, "$texture.png")
+            addEntry(Key.key("minecraft", name), copyMCTexture(path), SIZE, ASCENT)
         }
         
         TEXTURES.forEach {
-            addEntry(ResourcePath("minecraft", it), copyMCTexture(ResourcePath("minecraft", "block/$it.png")), SIZE, ASCENT)
+            addEntry(Key.key("minecraft", it), copyMCTexture(ResourcePath(ResourceType.Texture, "minecraft", "block/$it")), SIZE, ASCENT)
         }
     }
     
@@ -291,8 +300,8 @@ class WailaContent internal constructor(
             
             val idNamespace = pack.namespace.takeUnless { it == "nova" } ?: "minecraft" // all textures form "nova" asset pack are for minecraft blocks
             addEntry(
-                ResourcePath(idNamespace, file.nameWithoutExtension),
-                ResourcePath(pack.namespace, "waila/${file.name}"),
+                Key.key(idNamespace, file.nameWithoutExtension),
+                ResourcePath(ResourceType.FontTexture, pack.namespace, "waila/${file.name}"),
                 SIZE, ASCENT
             )
         }

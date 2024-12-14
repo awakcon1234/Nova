@@ -31,7 +31,6 @@ import java.io.ByteArrayOutputStream
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.locks.ReentrantLock
-import java.util.logging.Level
 import kotlin.concurrent.withLock
 import kotlin.random.Random
 
@@ -47,6 +46,7 @@ internal class RegionChunk(
     @Volatile
     var isEnabled = false
         private set
+    
     @Volatile
     var hasBeenEnabled = false
         private set
@@ -88,7 +88,7 @@ internal class RegionChunk(
                     vanillaTileEntities[pos] = type.create(pos, data)
                 }
             } catch (t: Throwable) {
-                LOGGER.log(Level.SEVERE, "Failed to initialize vanilla tile entity pos=$pos, data=$data", t)
+                LOGGER.error("Failed to initialize vanilla tile entity pos=$pos, data=$data", t)
             }
         }
     }
@@ -100,7 +100,7 @@ internal class RegionChunk(
         for ((pos, data) in tileEntityData) {
             val blockState = getBlockState(pos)
             if (blockState == null) {
-                LOGGER.log(Level.SEVERE, "Failed to initialize tile entity at $pos because there is no block state")
+                LOGGER.error("Failed to initialize tile entity at $pos because there is no block state")
                 return
             }
             
@@ -109,7 +109,7 @@ internal class RegionChunk(
                 // nova:unknown is the only non-tile-entity block that is allowed to have tile-entity data
                 continue
             } else if (block == null) {
-                LOGGER.log(Level.SEVERE, "Failed to initialize tile entity at $pos because ${blockState.block} is not a tile entity type")
+                LOGGER.error("Failed to initialize tile entity at $pos because ${blockState.block} is not a tile entity type")
                 return
             }
             
@@ -118,7 +118,7 @@ internal class RegionChunk(
                 if (block.tickrate > 0)
                     tickingTileEntityCount++
             } catch (t: Throwable) {
-                LOGGER.log(Level.SEVERE, "Failed to initialize tile entity pos=$pos, blockState=$blockState, data=$data", t)
+                LOGGER.error("Failed to initialize tile entity pos=$pos, blockState=$blockState, data=$data", t)
             }
         }
     }
@@ -208,7 +208,7 @@ internal class RegionChunk(
                 try {
                     vte.handleEnable()
                 } catch (t: Throwable) {
-                    LOGGER.log(Level.SEVERE, "Failed to enable vanilla tile-entity $vte", t)
+                    LOGGER.error("Failed to enable vanilla tile-entity $vte", t)
                 }
             }
         }
@@ -216,7 +216,7 @@ internal class RegionChunk(
         try {
             previous?.handleDisable()
         } catch (t: Throwable) {
-            LOGGER.log(Level.SEVERE, "Failed to disable vanilla tile-entity $previous", t)
+            LOGGER.error("Failed to disable vanilla tile-entity $previous", t)
         }
         
         return previous
@@ -253,7 +253,7 @@ internal class RegionChunk(
                 try {
                     tileEntity.handleEnable()
                 } catch (t: Throwable) {
-                    LOGGER.log(Level.SEVERE, "Failed to enable tile-entity $tileEntity", t)
+                    LOGGER.error("Failed to enable tile-entity $tileEntity", t)
                 }
             }
             
@@ -265,7 +265,7 @@ internal class RegionChunk(
                         tileEntity.coroutineSupervisor = SupervisorJob(coroutineSupervisor)
                         tileEntity.handleEnableTicking()
                     } catch (t: Throwable) {
-                        LOGGER.log(Level.SEVERE, "Failed to enable ticking for $tileEntity", t)
+                        LOGGER.error("Failed to enable ticking for $tileEntity", t)
                     }
                 }
             }
@@ -278,8 +278,8 @@ internal class RegionChunk(
                 if (isTicking) {
                     try {
                         previous.handleDisableTicking()
-                    } catch(t: Throwable) {
-                        LOGGER.log(Level.SEVERE, "Failed to disable ticking for $tileEntity", t)
+                    } catch (t: Throwable) {
+                        LOGGER.error("Failed to disable ticking for $tileEntity", t)
                     }
                 }
             }
@@ -287,7 +287,7 @@ internal class RegionChunk(
             try {
                 previous.handleDisable()
             } catch (t: Throwable) {
-                LOGGER.log(Level.SEVERE, "Failed to disable tile-entity $previous", t)
+                LOGGER.error("Failed to disable tile-entity $previous", t)
             }
             previous.isEnabled = false
         }
@@ -337,7 +337,7 @@ internal class RegionChunk(
             }
             
             // remove vanilla tile entities that have de-synced from the block type
-            vanillaTileEntities.removeIf { (pos, vte) -> 
+            vanillaTileEntities.removeIf { (pos, vte) ->
                 val invalid = pos.block.type !in vte.type.materials
                 if (invalid) vanillaTileEntityData.remove(pos)
                 invalid
@@ -354,14 +354,14 @@ internal class RegionChunk(
                 try {
                     tileEntity.handleEnable()
                 } catch (t: Throwable) {
-                    LOGGER.log(Level.SEVERE, "Failed to enable tile-entity $tileEntity", t)
+                    LOGGER.error("Failed to enable tile-entity $tileEntity", t)
                 }
             }
             for (vte in vanillaTileEntities.values) {
                 try {
                     vte.handleEnable()
                 } catch (t: Throwable) {
-                    LOGGER.log(Level.SEVERE, "Failed to enable vanilla tile-entity $vte", t)
+                    LOGGER.error("Failed to enable vanilla tile-entity $vte", t)
                 }
             }
             
@@ -392,7 +392,7 @@ internal class RegionChunk(
                 try {
                     tileEntity.handleDisable()
                 } catch (t: Throwable) {
-                    LOGGER.log(Level.SEVERE, "Failed to disable tile-entity $tileEntity", t)
+                    LOGGER.error("Failed to disable tile-entity $tileEntity", t)
                 }
             }
             
@@ -400,7 +400,7 @@ internal class RegionChunk(
                 try {
                     vte.handleDisable()
                 } catch (t: Throwable) {
-                    LOGGER.log(Level.SEVERE, "Failed to disable vanilla tile-entity $vte", t)
+                    LOGGER.error("Failed to disable vanilla tile-entity $vte", t)
                 }
             }
             
@@ -457,7 +457,7 @@ internal class RegionChunk(
                 tileEntity.coroutineSupervisor = SupervisorJob(chunkSupervisor)
                 tileEntity.handleEnableTicking()
             } catch (t: Throwable) {
-                LOGGER.log(Level.SEVERE, "Failed to enable ticking for $tileEntity", t)
+                LOGGER.error("Failed to enable ticking for $tileEntity", t)
             }
         }
         
@@ -483,7 +483,7 @@ internal class RegionChunk(
             try {
                 tileEntity.handleDisableTicking()
             } catch (t: Throwable) {
-                LOGGER.log(Level.SEVERE, "Failed to disable ticking for $tileEntity", t)
+                LOGGER.error("Failed to disable ticking for $tileEntity", t)
             }
         }
         
@@ -512,7 +512,7 @@ internal class RegionChunk(
                     if (tileEntity.isEnabled) // this should prevent tile-entities that were removed during ticking from being ticked
                         tileEntity.handleTick()
                 } catch (t: Throwable) {
-                    LOGGER.log(Level.SEVERE, "An exception occurred while ticking tile entity $tileEntity", t)
+                    LOGGER.error("An exception occurred while ticking tile entity $tileEntity", t)
                 }
             }
         }
@@ -535,7 +535,7 @@ internal class RegionChunk(
                             try {
                                 blockState.block.handleRandomTick(pos, blockState)
                             } catch (t: Throwable) {
-                                LOGGER.log(Level.SEVERE, "An exception occurred while ticking block $blockState at $pos", t)
+                                LOGGER.error("An exception occurred while ticking block $blockState at $pos", t)
                             }
                         }
                     }

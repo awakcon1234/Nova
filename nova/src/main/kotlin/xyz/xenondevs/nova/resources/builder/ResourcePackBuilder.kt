@@ -5,15 +5,17 @@ import com.google.common.jimfs.Jimfs
 import com.google.gson.JsonObject
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
+import net.minecraft.SharedConstants
+import net.minecraft.server.packs.PackType
 import xyz.xenondevs.commons.collections.enumMap
 import xyz.xenondevs.commons.provider.MutableProvider
 import xyz.xenondevs.commons.provider.Provider
 import xyz.xenondevs.commons.provider.combinedProvider
+import xyz.xenondevs.commons.provider.flatMap
 import xyz.xenondevs.commons.provider.flattenIterables
 import xyz.xenondevs.commons.provider.map
-import xyz.xenondevs.commons.provider.mapNonNull
 import xyz.xenondevs.commons.provider.mutableProvider
-import xyz.xenondevs.commons.provider.orElse
+import xyz.xenondevs.commons.provider.provider
 import xyz.xenondevs.downloader.ExtractionMode
 import xyz.xenondevs.downloader.MinecraftAssetsDownloader
 import xyz.xenondevs.nova.DATA_FOLDER
@@ -115,10 +117,12 @@ class ResourcePackBuilder internal constructor() {
     
     companion object {
         
+        /**
+         * The resource pack format version of the current Minecraft version.
+         */
+        val PACK_VERSION = SharedConstants.getCurrentVersion().getPackVersion(PackType.CLIENT_RESOURCES)
+        
         private val JIMFS_PROVIDER: MutableProvider<FileSystem> = mutableProvider { Jimfs.newFileSystem(Configuration.unix()) }
-        private val FILE_SYSTEM_PROVIDER: Provider<FileSystem> = combinedProvider(
-            IN_MEMORY_PROVIDER, JIMFS_PROVIDER
-        ) { inMemory, jimfs -> if (inMemory) jimfs else FileSystems.getDefault() }
         
         //<editor-fold desc="never in memory">
         val RESOURCE_PACK_FILE: Path = DATA_FOLDER.resolve("resource_pack/ResourcePack.zip")
@@ -129,7 +133,11 @@ class ResourcePackBuilder internal constructor() {
         //</editor-fold>
         
         //<editor-fold desc="potentially in memory">
-        private val RESOURCE_PACK_BUILD_DIR_PROVIDER: Provider<Path> = FILE_SYSTEM_PROVIDER.mapNonNull { it.rootDirectories.first() }.orElse(RESOURCE_PACK_DIR.resolve(".build"))
+        private val RESOURCE_PACK_BUILD_DIR_PROVIDER: Provider<Path> = IN_MEMORY_PROVIDER.flatMap { inMemory -> 
+            if (inMemory) 
+                JIMFS_PROVIDER.map { it.rootDirectories.first() } 
+            else provider(RESOURCE_PACK_DIR.resolve(".build"))
+        }
         private val TEMP_BASE_PACKS_DIR_PROVIDER: Provider<Path> = RESOURCE_PACK_BUILD_DIR_PROVIDER.map { it.resolve("base_packs") }
         private val PACK_DIR_PROVIDER: Provider<Path> = RESOURCE_PACK_BUILD_DIR_PROVIDER.map { it.resolve("pack") }
         private val ASSETS_DIR_PROVIDER: Provider<Path> = PACK_DIR_PROVIDER.map { it.resolve("assets") }
@@ -310,10 +318,7 @@ class ResourcePackBuilder internal constructor() {
     private fun writeMetadata(assetPacks: Int, basePacks: Int) {
         val packMcmetaObj = JsonObject()
         val packObj = JsonObject().also { packMcmetaObj.add("pack", it) }
-        packObj.addProperty("pack_format", 15)
-        val supportedFormats = JsonObject().also { packObj.add("supported_formats", it) }
-        supportedFormats.addProperty("min_inclusive", 0)
-        supportedFormats.addProperty("max_inclusive", 999)
+        packObj.addProperty("pack_format", PACK_VERSION)
         packObj.addProperty("description", PACK_DESCRIPTION.format(assetPacks, basePacks))
         
         PACK_MCMETA_FILE.parent.createDirectories()

@@ -162,5 +162,8 @@
     "nova.tile_entity_limits.amount_global_total.deny": "Bạn không thể đặt thêm thực thể khối nào nữa.",
     "nova.tile_entity_limits.amount_per_world_total.deny": "Bạn không thể đặt thêm thực thể khối trong thế giới này nữa.",
     "nova.tile_entity_limits.amount_per_chunk_total.deny": "Bạn không thể đặt thêm thực thể khối trong chunk này nữa.",
-    "nova.outdated_version": "Bạn đang chạy một phiên bản cũ: %s.Hãy cập nhật lên phiên bản mới nhất tại %s."
+    "nova.outdated_version": "Bạn đang chạy một phiên bản cũ: %s.Hãy cập nhật lên phiên bản mới nhất tại %s.",
+    "command.nova.show_item_behaviors.success": "%s này bao gồm %s hành vi:\n%s",
+    "command.nova.show_item_behaviors.no_item": "Hãy cầm một item trên tay chính của bạn và thử lại.",
+    "command.nova.recalculate_leave_properties.done": "Đã xử lý %s lá cây và làm cho %s lá cây tự biến mất."
 }

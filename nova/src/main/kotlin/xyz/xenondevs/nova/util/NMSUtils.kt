@@ -4,11 +4,15 @@ package xyz.xenondevs.nova.util
 
 import com.mojang.datafixers.util.Either
 import io.netty.buffer.Unpooled
+import io.papermc.paper.registry.TypedKey
+import io.papermc.paper.registry.set.RegistryKeySet
+import io.papermc.paper.registry.tag.Tag
 import net.kyori.adventure.key.Key
 import net.minecraft.core.DefaultedRegistry
 import net.minecraft.core.Direction
 import net.minecraft.core.Holder
 import net.minecraft.core.HolderGetter
+import net.minecraft.core.HolderSet
 import net.minecraft.core.MappedRegistry
 import net.minecraft.core.NonNullList
 import net.minecraft.core.RegistrationInfo
@@ -26,6 +30,7 @@ import net.minecraft.server.level.ServerLevel
 import net.minecraft.server.level.ServerPlayer
 import net.minecraft.server.network.ServerGamePacketListenerImpl
 import net.minecraft.server.players.PlayerList
+import net.minecraft.tags.TagKey
 import net.minecraft.world.InteractionHand
 import net.minecraft.world.entity.ai.attributes.Attributes
 import net.minecraft.world.entity.item.ItemEntity
@@ -67,7 +72,7 @@ import xyz.xenondevs.nova.resources.ResourcePath
 import xyz.xenondevs.nova.resources.ResourceType
 import xyz.xenondevs.nova.util.reflection.ReflectionUtils
 import xyz.xenondevs.nova.world.BlockPos
-import java.util.Optional
+import java.util.*
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.jvm.optionals.getOrNull
 import net.minecraft.core.BlockPos as MojangBlockPos
@@ -143,6 +148,9 @@ fun Key.toResourceLocation(): ResourceLocation =
 fun ResourceLocation.toKey(): Key =
     Key.key(namespace, path)
 
+fun ResourceLocation.toNamespacedKey(): NamespacedKey =
+    NamespacedKey(namespace, path)
+
 val EquipmentSlot.nmsInteractionHand: InteractionHand
     get() = when (this) {
         EquipmentSlot.HAND -> InteractionHand.MAIN_HAND
@@ -159,6 +167,7 @@ val EquipmentSlot.nmsEquipmentSlot: MojangEquipmentSlot
         EquipmentSlot.CHEST -> MojangEquipmentSlot.CHEST
         EquipmentSlot.HEAD -> MojangEquipmentSlot.HEAD
         EquipmentSlot.BODY -> MojangEquipmentSlot.BODY
+        EquipmentSlot.SADDLE -> MojangEquipmentSlot.SADDLE
     }
 
 val MojangEquipmentSlot.bukkitEquipmentSlot: EquipmentSlot
@@ -170,6 +179,7 @@ val MojangEquipmentSlot.bukkitEquipmentSlot: EquipmentSlot
         MojangEquipmentSlot.CHEST -> EquipmentSlot.CHEST
         MojangEquipmentSlot.HEAD -> EquipmentSlot.HEAD
         MojangEquipmentSlot.BODY -> EquipmentSlot.BODY
+        MojangEquipmentSlot.SADDLE -> EquipmentSlot.SADDLE
     }
 
 val MojangEquipmentSlot.nmsInteractionHand: InteractionHand
@@ -437,11 +447,6 @@ operator fun <T> Registry<T>.get(key: String): Optional<Holder.Reference<T>> {
     return get(id)
 }
 
-fun <T> Registry<T>.get(id: ResourceLocation): Holder<T>? {
-    val key = ResourceKey.create(key(), id)
-    return get(key).getOrNull()
-}
-
 fun <T> Registry<T>.getOrNull(key: String): Holder.Reference<T>? {
     return get(key).getOrNull()
 }
@@ -629,6 +634,31 @@ fun ResourceLocation.toString(separator: String): String {
 
 fun ResourceLocation(addon: Addon, name: String): ResourceLocation {
     return ResourceLocation.fromNamespaceAndPath(addon.id, name)
+}
+
+fun <T> io.papermc.paper.registry.tag.TagKey<*>.toNmsTagKey(registry: ResourceKey<out Registry<T>>): TagKey<T> =
+    TagKey.create(registry, key().toResourceLocation())
+
+fun <T> TypedKey<*>.toResourceKey(registry: ResourceKey<out Registry<T>>): ResourceKey<T> =
+    ResourceKey.create(registry, key().toResourceLocation())
+
+fun <T> Iterable<TypedKey<*>>.toHolderSet(
+    registryKey: ResourceKey<out Registry<T>>,
+    registry: HolderGetter<T>
+): HolderSet<T> {
+    return map { it.toResourceKey(registryKey) }
+        .map { registry.getOrThrow(it) }
+        .let { HolderSet.direct(it) }
+}
+
+fun <T> RegistryKeySet<*>.toNmsHolderSet(
+    registryKey: ResourceKey<out Registry<T>>, 
+    registry: HolderGetter<T>
+): HolderSet<T> {
+    return when (this) {
+        is Tag -> registry.getOrThrow(tagKey().toNmsTagKey(registryKey))
+        else -> values().toHolderSet(registryKey, registry)
+    }
 }
 
 fun preventPacketBroadcast(run: () -> Unit) {

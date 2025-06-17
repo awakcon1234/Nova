@@ -16,6 +16,7 @@ import xyz.xenondevs.commons.provider.flattenIterables
 import xyz.xenondevs.commons.provider.map
 import xyz.xenondevs.commons.provider.mutableProvider
 import xyz.xenondevs.commons.provider.provider
+import xyz.xenondevs.commons.version.Version
 import xyz.xenondevs.downloader.ExtractionMode
 import xyz.xenondevs.downloader.MinecraftAssetsDownloader
 import xyz.xenondevs.nova.DATA_FOLDER
@@ -34,6 +35,7 @@ import xyz.xenondevs.nova.resources.builder.basepack.BasePacks
 import xyz.xenondevs.nova.resources.builder.task.AtlasContent
 import xyz.xenondevs.nova.resources.builder.task.BarOverlayTask
 import xyz.xenondevs.nova.resources.builder.task.BuildStage
+import xyz.xenondevs.nova.resources.builder.task.EntityVariantContent
 import xyz.xenondevs.nova.resources.builder.task.EquipmentContent
 import xyz.xenondevs.nova.resources.builder.task.ExtractTask
 import xyz.xenondevs.nova.resources.builder.task.LanguageContent
@@ -51,7 +53,7 @@ import xyz.xenondevs.nova.resources.builder.task.model.BlockModelContent
 import xyz.xenondevs.nova.resources.builder.task.model.ItemModelContent
 import xyz.xenondevs.nova.resources.builder.task.model.ModelContent
 import xyz.xenondevs.nova.serialization.json.GSON
-import xyz.xenondevs.nova.util.data.Version
+import xyz.xenondevs.nova.util.SERVER_VERSION
 import xyz.xenondevs.nova.util.data.readJson
 import xyz.xenondevs.nova.util.data.writeImage
 import xyz.xenondevs.nova.util.data.writeJson
@@ -168,7 +170,7 @@ class ResourcePackBuilder internal constructor() {
             ::ExtractTask, ::EquipmentContent, ::GuiContent, ::LanguageContent, ::TextureIconContent,
             ::AtlasContent, ::WailaContent, ::MovedFontContent, ::CharSizeCalculator, ::SoundOverrides, ::FontContent,
             ::BarOverlayTask, ::MoveCharactersContent, ::ModelContent, ::BlockModelContent,
-            ::ItemModelContent, ::TextureContent, ::TooltipStyleContent
+            ::ItemModelContent, ::TextureContent, ::TooltipStyleContent, ::EntityVariantContent
         )
         
         /**
@@ -224,11 +226,11 @@ class ResourcePackBuilder internal constructor() {
         try {
             totalTime += measureTime {
                 // download minecraft assets if not present / outdated
-                if (!MCASSETS_DIR.exists() || PermanentStorage.retrieveOrNull<Version>("minecraftAssetsVersion") != Version.SERVER_VERSION) {
+                if (!MCASSETS_DIR.exists() || PermanentStorage.retrieve<Version>("minecraftAssetsVersion") != SERVER_VERSION) {
                     MCASSETS_DIR.toFile().deleteRecursively()
                     runBlocking {
                         val downloader = MinecraftAssetsDownloader(
-                            version = Version.SERVER_VERSION.toString(omitZeros = true),
+                            version = SERVER_VERSION.toString(omitZeros = true),
                             outputDirectory = MCASSETS_DIR.toFile(),
                             mode = EXTRACTION_MODE,
                             logger = LOGGER
@@ -242,7 +244,7 @@ class ResourcePackBuilder internal constructor() {
                                     append(" If your server can't access github.com in general, you can change \"minecraft_assets_source\" in the config to \"mojang\".")
                             }, ex)
                         }
-                        PermanentStorage.store("minecraftAssetsVersion", Version.SERVER_VERSION)
+                        PermanentStorage.store("minecraftAssetsVersion", SERVER_VERSION)
                     }
                 }
                 
@@ -451,6 +453,24 @@ class ResourcePackBuilder internal constructor() {
     inline fun <reified V> readJson(path: ResourcePath<ResourceType.JsonFile>, json: Json = Json): V? {
         val file = resolve(path)
         return if (file.exists()) file.readJson(json) else null
+    }
+    
+    /**
+     * Deserializes the JSON content of the file under [path] in the vanilla minecraft assets.
+     * to [V] using [json], or returns `null` if the file does not exist.
+     * If an exception occurs during deserialization, it is logged and `null` is returned.
+     */
+    internal inline fun <reified V> readJsonVanillaCatching(path: ResourcePath<ResourceType.JsonFile>, json: Json = Json): V? {
+        val file = resolveVanilla(path)
+        if (file.exists()) {
+            try {
+                return file.readJson<V>(json)
+            } catch(e: Exception) {
+                LOGGER.error("An exception occurred trying to parse $file", e)
+            }
+        }
+        
+        return null
     }
     
     /**

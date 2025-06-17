@@ -189,35 +189,39 @@ class AnimatedEquipmentLayerBuilder<T : ResourceType.EquipmentTexture> internal 
      * For each frame ([frames] times), the emissivity map is selected under `assets/<namespace>/textures/entity/equipment/<type>/<texture>.png`
      * using [getEmissivityMap], where `namespace` and `texture` are defined by [emissivityMap] and `type` is the current entity type.
      */
+    @Deprecated(EMISSIVITY_MAP_DEPRECATION)
     @JvmName("emissivityMapResourcePath")
     @OverloadResolutionByLambdaReturnType
     fun emissivityMap(frames: Int, ticksPerFrame: Int, interpolationMode: InterpolationMode, getEmissivityMap: (frame: Int) -> ResourcePath<T>) {
-        emissivityMap = Animation(List(frames, getEmissivityMap), ticksPerFrame, interpolationMode)
+//        emissivityMap = Animation(List(frames, getEmissivityMap), ticksPerFrame, interpolationMode)
     }
     
     /**
      * For each frame ([frames] times), the emissivity map is selected under `textures/entity/equipment/<type>/<texture>.png`
      * using [getEmissivityMap], where `texture` is defined by [emissivityMap] and `type` is the current entity type.
      */
+    @Deprecated(EMISSIVITY_MAP_DEPRECATION)
     @OverloadResolutionByLambdaReturnType
     fun emissivityMap(frames: Int, ticksPerFrame: Int, interpolationMode: InterpolationMode, getEmissivityMap: (frame: Int) -> String) {
-        emissivityMap = Animation(List(frames) { ResourcePath.of(textureType, getEmissivityMap(it), namespace) }, ticksPerFrame, interpolationMode)
+//        emissivityMap = Animation(List(frames) { ResourcePath.of(textureType, getEmissivityMap(it), namespace) }, ticksPerFrame, interpolationMode)
     }
     
     /**
      * Uses all emissivity maps `assets/<namespace>/textures/entity/equipment/<type>/<texture>.png`, where
      * `namespace` and `texture` are defined by each frame from [frames] and `type` is the current entity type.
      */
+    @Deprecated(EMISSIVITY_MAP_DEPRECATION)
     fun emissivityMap(ticksPerFrame: Int, interpolationMode: InterpolationMode, vararg frames: ResourcePath<T>) {
-        emissivityMap = Animation(frames.toList(), ticksPerFrame, interpolationMode)
+//        emissivityMap = Animation(frames.toList(), ticksPerFrame, interpolationMode)
     }
     
     /**
      * Uses all emissivity maps `textures/entity/equipment/<type>/<texture>.png`, where
      * `texture` is defined by each frame from [frames] and `type` is the current entity type.
      */
+    @Deprecated(EMISSIVITY_MAP_DEPRECATION)
     fun emissivityMap(ticksPerFrame: Int, interpolationMode: InterpolationMode, vararg frames: String) {
-        emissivityMap = Animation(frames.map { ResourcePath.of(textureType, it, namespace) }, ticksPerFrame, interpolationMode)
+//        emissivityMap = Animation(frames.map { ResourcePath.of(textureType, it, namespace) }, ticksPerFrame, interpolationMode)
     }
     
     /**

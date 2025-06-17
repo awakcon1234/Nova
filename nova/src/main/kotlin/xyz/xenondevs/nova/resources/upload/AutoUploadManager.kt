@@ -17,7 +17,6 @@ import xyz.xenondevs.nova.resources.builder.ResourcePackBuilder
 import xyz.xenondevs.nova.resources.upload.service.CustomMultiPart
 import xyz.xenondevs.nova.resources.upload.service.S3
 import xyz.xenondevs.nova.resources.upload.service.SelfHost
-import xyz.xenondevs.nova.resources.upload.service.Xenondevs
 import xyz.xenondevs.nova.util.data.http.ConnectionUtils
 import java.nio.file.Path
 import kotlin.io.path.exists
@@ -29,7 +28,7 @@ import kotlin.io.path.exists
 )
 internal object AutoUploadManager {
     
-    internal val services = arrayListOf(Xenondevs, SelfHost, CustomMultiPart, S3)
+    internal val services = arrayListOf(SelfHost, CustomMultiPart, S3)
     
     var enabled = false
         private set
@@ -37,12 +36,12 @@ internal object AutoUploadManager {
     private var explicitUrl = false
     private var selectedService: UploadService? = null
     
-    private var url: String? = PermanentStorage.retrieveOrNull("resourcePackURL")
+    private var url: String? = PermanentStorage.retrieve("resourcePackURL")
         set(value) {
             field = value
             PermanentStorage.store("resourcePackURL", value)
         }
-    private var lastConfig: Int? = PermanentStorage.retrieveOrNull("lastUploadConfig")
+    private var lastConfig: Int? = PermanentStorage.retrieve("lastUploadConfig")
         set(value) {
             field = value
             PermanentStorage.store("lastUploadConfig", value)

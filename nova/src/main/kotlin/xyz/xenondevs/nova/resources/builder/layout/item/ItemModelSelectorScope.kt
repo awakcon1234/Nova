@@ -36,11 +36,7 @@ class ItemModelSelectorScope internal constructor(
         val path = ResourcePath(ResourceType.Model, id.namespace(), "item/${id.value()}")
         modelContent[path]
             ?.let(::ModelBuilder)
-            ?: createLayeredModel(
-                // empty layer 0 for the case that this used for leather armor (layer 0 is colored)
-                ResourcePath(ResourceType.Model, "nova", "item/empty"),
-                path
-            )
+            ?: createLayeredModel(path)
     }
     
     /**
@@ -82,8 +78,7 @@ class ItemModelSelectorScope internal constructor(
      * 
      * Using [display], additional transformations can be applied.
      */
-    @JvmOverloads // TODO remove in 0.19
-    fun createGuiModel(background: Boolean, stretched: Boolean, vararg layers: String, display: Model.Display? = null): ModelBuilder =
+    fun createGuiModel(background: Boolean, stretched: Boolean, vararg layers: String, display: Model.Display.Entry? = null): ModelBuilder =
         createGuiModel(background, stretched, *layers.mapToArray { ResourcePath.of(ResourceType.Model, it, id.namespace()) }, display = display)
     
     /**
@@ -96,8 +91,7 @@ class ItemModelSelectorScope internal constructor(
      * 
      * Using [display], additional transformations can be applied.
      */
-    @JvmOverloads // TODO remove in 0.19
-    fun createGuiModel(background: Boolean, stretched: Boolean, vararg layers: ResourcePath<ResourceType.Model>, display: Model.Display? = null): ModelBuilder {
+    fun createGuiModel(background: Boolean, stretched: Boolean, vararg layers: ResourcePath<ResourceType.Model>, display: Model.Display.Entry? = null): ModelBuilder {
         if (!background && !stretched && display == null)
             return createLayeredModel(*layers)
         
@@ -133,7 +127,7 @@ class ItemModelSelectorScope internal constructor(
         val parent = Model(
             ResourcePath(ResourceType.Model, "nova", "item/gui_item"),
             elements = elements,
-            display = if (display != null) mapOf(Model.Display.Position.GUI to display) else emptyMap()
+            display = display?.let { Model.Display(gui = it) }
         )
         val parentId = modelContent.getOrPutGenerated(parent)
         

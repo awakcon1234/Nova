@@ -35,6 +35,7 @@ private val MATERIAL_TEXTURES: Map<Material, String> = enumMapOf(
     Material.ACACIA_DOOR to "item/acacia_door",
     Material.DARK_OAK_DOOR to "item/dark_oak_door",
     Material.MANGROVE_DOOR to "item/mangrove_door",
+    Material.BAMBOO_DOOR to "item/bamboo_door",
     Material.CRIMSON_DOOR to "item/crimson_door",
     Material.WARPED_DOOR to "item/warped_door",
     Material.COPPER_DOOR to "item/copper_door",
@@ -55,6 +56,7 @@ private val MATERIAL_TEXTURES: Map<Material, String> = enumMapOf(
     Material.ACACIA_SIGN to "item/acacia_sign",
     Material.DARK_OAK_SIGN to "item/dark_oak_sign",
     Material.MANGROVE_SIGN to "item/mangrove_sign",
+    Material.BAMBOO_SIGN to "item/bamboo_sign",
     Material.CRIMSON_SIGN to "item/crimson_sign",
     Material.WARPED_SIGN to "item/warped_sign",
     Material.BAMBOO_SIGN to "item/bamboo_sign",
@@ -69,6 +71,7 @@ private val MATERIAL_TEXTURES: Map<Material, String> = enumMapOf(
     Material.ACACIA_HANGING_SIGN to "item/acacia_hanging_sign",
     Material.DARK_OAK_HANGING_SIGN to "item/dark_oak_hanging_sign",
     Material.MANGROVE_HANGING_SIGN to "item/mangrove_hanging_sign",
+    Material.BAMBOO_HANGING_SIGN to "item/bamboo_hanging_sign",
     Material.CRIMSON_HANGING_SIGN to "item/crimson_hanging_sign",
     Material.WARPED_HANGING_SIGN to "item/warped_hanging_sign",
     Material.BAMBOO_HANGING_SIGN to "item/bamboo_hanging_sign",
@@ -101,6 +104,9 @@ private val MATERIAL_TEXTURES: Map<Material, String> = enumMapOf(
     Material.PUMPKIN_STEM to "item/pumpkin_seeds",
     Material.MELON_STEM to "item/melon_seeds",
     Material.PALE_HANGING_MOSS to "block/pale_hanging_moss",
+    Material.FIREFLY_BUSH to "block/firefly_bush",
+    Material.SHORT_DRY_GRASS to "block/short_dry_grass",
+    Material.TALL_DRY_GRASS to "block/tall_dry_grass",
     
     // flowers
     Material.DANDELION to "block/dandelion",
@@ -126,6 +132,8 @@ private val MATERIAL_TEXTURES: Map<Material, String> = enumMapOf(
     Material.PITCHER_PLANT to "item/pitcher_plant",
     Material.OPEN_EYEBLOSSOM to "block/open_eyeblossom",
     Material.CLOSED_EYEBLOSSOM to "block/closed_eyeblossom",
+    Material.CACTUS_FLOWER to "block/cactus_flower",
+    Material.WILDFLOWERS to "block/wildflowers",
     
     // mushrooms
     Material.BROWN_MUSHROOM to "block/brown_mushroom",
@@ -263,7 +271,7 @@ class WailaContent internal constructor(
     }
     
     private fun writeHardcodedTextures() {
-        fun copyMCTexture(from: ResourcePath<ResourceType.Texture>): ResourcePath<ResourceType.FontTexture> {
+        fun copyMCTexture(from: ResourcePath<ResourceType.PngFile>): ResourcePath<ResourceType.FontTexture> {
             val name = from.path.substringAfterLast('/')
             val to = ResourcePath(ResourceType.FontTexture, "nova", "waila_generated/$name.png")
             

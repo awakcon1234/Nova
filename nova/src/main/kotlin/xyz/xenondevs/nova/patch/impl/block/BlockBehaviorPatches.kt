@@ -6,6 +6,7 @@ import net.minecraft.server.level.ServerLevel
 import net.minecraft.server.network.ServerGamePacketListenerImpl
 import net.minecraft.util.RandomSource
 import net.minecraft.world.entity.Entity
+import net.minecraft.world.entity.InsideBlockEffectApplier
 import net.minecraft.world.entity.player.Player
 import net.minecraft.world.item.ItemStack
 import net.minecraft.world.level.Level
@@ -27,8 +28,9 @@ import xyz.xenondevs.nova.context.param.DefaultContextParamTypes
 import xyz.xenondevs.nova.patch.MultiTransformer
 import xyz.xenondevs.nova.util.toNovaPos
 import xyz.xenondevs.nova.util.unwrap
-import xyz.xenondevs.nova.world.block.state.model.BackingStateConfig
-import xyz.xenondevs.nova.world.block.state.model.DisplayEntityBlockModelData
+import xyz.xenondevs.nova.world.block.state.model.BackingStateBlockModelProvider
+import xyz.xenondevs.nova.world.block.state.model.DisplayEntityBlockModelProvider
+import xyz.xenondevs.nova.world.block.state.model.ModelLessBlockModelProvider
 import xyz.xenondevs.nova.world.format.WorldDataManager
 import java.lang.invoke.MethodHandles
 import java.lang.invoke.MethodType
@@ -86,7 +88,8 @@ private val BLOCK_BEHAVIOR_ENTITY_INSIDE = BLOCK_BEHAVIOR_LOOKUP.findVirtual(
         BlockState::class.java,
         Level::class.java,
         BlockPos::class.java,
-        Entity::class.java
+        Entity::class.java,
+        InsideBlockEffectApplier::class.java
     )
 )
 
@@ -132,16 +135,14 @@ internal object BlockBehaviorPatches : MultiTransformer(BlockStateBase::class, S
                     val newState = novaState.block.updateShape(novaPos, novaState, neighborPos.toNovaPos(level.world))
                     if (newState != novaState) {
                         WorldDataManager.setBlockState(novaPos, newState)
-                        return when (val info = newState.modelProvider.info) {
-                            is BackingStateConfig -> info.vanillaBlockState
-                            is BlockState -> info
-                            is DisplayEntityBlockModelData -> {
+                        return when (val modelProvider = newState.modelProvider) {
+                            is BackingStateBlockModelProvider -> modelProvider.info.vanillaBlockState
+                            is ModelLessBlockModelProvider -> modelProvider.info
+                            is DisplayEntityBlockModelProvider -> {
                                 novaState.modelProvider.unload(novaPos)
                                 newState.modelProvider.load(novaPos)
-                                info.hitboxType
+                                modelProvider.info.hitboxType
                             }
-                            
-                            else -> throw UnsupportedOperationException()
                         }
                     }
                     
@@ -171,7 +172,7 @@ internal object BlockBehaviorPatches : MultiTransformer(BlockStateBase::class, S
     }
     
     @JvmStatic
-    fun entityInside(thisRef: BlockStateBase, level: Level, pos: BlockPos, entity: Entity) {
+    fun entityInside(thisRef: BlockStateBase, level: Level, pos: BlockPos, entity: Entity, effectApplier: InsideBlockEffectApplier) {
         val novaPos = pos.toNovaPos(level.world)
         val novaState = WorldDataManager.getBlockState(novaPos)
         if (novaState != null) {
@@ -181,7 +182,7 @@ internal object BlockBehaviorPatches : MultiTransformer(BlockStateBase::class, S
                 LOGGER.error("Failed to handle entity inside for $novaState at $novaPos", e)
             }
         } else {
-            BLOCK_BEHAVIOR_ENTITY_INSIDE.invoke(thisRef.block, thisRef, level, pos, entity)
+            BLOCK_BEHAVIOR_ENTITY_INSIDE.invoke(thisRef.block, thisRef, level, pos, entity, effectApplier)
         }
     }
     

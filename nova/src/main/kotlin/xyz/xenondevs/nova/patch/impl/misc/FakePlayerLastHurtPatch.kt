@@ -1,60 +1,51 @@
 package xyz.xenondevs.nova.patch.impl.misc
 
 import net.minecraft.world.entity.LivingEntity
-import org.objectweb.asm.tree.FieldInsnNode
+import net.minecraft.world.entity.player.Player
 import org.objectweb.asm.tree.LabelNode
 import xyz.xenondevs.bytebase.asm.buildInsnList
 import xyz.xenondevs.bytebase.jvm.VirtualClassPath
-import xyz.xenondevs.bytebase.util.puts
-import xyz.xenondevs.bytebase.util.replaceEvery
 import xyz.xenondevs.nova.patch.MultiTransformer
 import xyz.xenondevs.nova.util.FakePlayer
+import xyz.xenondevs.nova.util.reflection.ReflectionUtils
+
+private val SET_LAST_HURT_BY_PLAYER = ReflectionUtils.getMethod(LivingEntity::class, "setLastHurtByPlayer", Player::class, Int::class)
+private val LAST_HURT_BY_PLAYER_MEMORY_TIME = ReflectionUtils.getField(LivingEntity::class, "lastHurtByPlayerMemoryTime")
 
 /**
- * Patches several methods to prevent fake players from being stored in the lastHurtByPlayer field.
+ * Prevents fake players from being stored in the lastHurtByPlayer field.
  */
 internal object FakePlayerLastHurtPatch : MultiTransformer(LivingEntity::class) {
     
     override fun transform() {
         transformSetLastHurtByPlayer()
-        transformHurt()
     }
     
+    /**
+     * Inserts at top of `setLastHurtByPlayer(Player, int)`:
+     * ```java
+     * if (player instanceof FakePlayer) {
+     *   this.lastHurtByPlayerMemoryTime = i; // required for experience orbs to be spawned
+     *   return;
+     * }
+     * ```
+     */
     private fun transformSetLastHurtByPlayer() {
-        val methodNode = VirtualClassPath[LivingEntity::setLastHurtByPlayer]
+        val methodNode = VirtualClassPath[SET_LAST_HURT_BY_PLAYER]
         methodNode.localVariables.clear()
-        val instructions = VirtualClassPath[LivingEntity::setLastHurtByPlayer].instructions
-        instructions.insert(buildInsnList {
-            val continueLabel = instructions.first as LabelNode
+        methodNode.instructions.insert(buildInsnList {
+            val continueLabel = methodNode.instructions.first as LabelNode
             
             addLabel()
             aLoad(1)
             instanceOf(FakePlayer::class)
-            ifne(continueLabel)
+            ifeq(continueLabel)
             addLabel()
+            aLoad(0)
+            iLoad(2)
+            putField(LAST_HURT_BY_PLAYER_MEMORY_TIME)
             _return()
         })
-    }
-    
-    private fun transformHurt() {
-        val methodNode = VirtualClassPath[LivingEntity::hurt]
-        methodNode.localVariables.clear()
-        methodNode.replaceEvery(0, 0, {
-            val popLabel = LabelNode()
-            val continueLabel = LabelNode()
-            
-            // on stack: this, damageSource
-            
-            dup()
-            instanceOf(FakePlayer::class)
-            ifne(popLabel)
-            addLabel()
-            putField(LivingEntity::lastHurtByPlayer)
-            goto(continueLabel)
-            add(popLabel)
-            pop2() // pops: this, damageSource
-            add(continueLabel)
-        }) { it is FieldInsnNode && it.puts(LivingEntity::lastHurtByPlayer) }
     }
     
 }

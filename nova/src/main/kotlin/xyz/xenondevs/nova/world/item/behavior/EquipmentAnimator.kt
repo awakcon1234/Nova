@@ -27,7 +27,6 @@ import xyz.xenondevs.nova.util.runTaskTimer
 import xyz.xenondevs.nova.util.serverLevel
 import xyz.xenondevs.nova.util.serverPlayer
 import xyz.xenondevs.nova.util.unwrap
-import kotlin.sequences.forEach
 import org.bukkit.inventory.EquipmentSlot as BukkitEquipmentSlot
 
 @InternalInit(stage = InternalInitStage.POST_WORLD)
@@ -71,15 +70,17 @@ internal object EquipmentAnimator {
     
     private fun updatePlayerArmor(player: Player) {
         val serverPlayer = player.serverPlayer
-        for ((armorSlot, armorStack) in serverPlayer.inventory.armor.withIndex()) {
-            var equipment = HashMap<EquipmentSlot, ItemStack>()
+        val updatedEquipment = HashMap<EquipmentSlot, ItemStack>()
+        for ((armorSlot, armorStack) in player.equipment.armorContents.withIndex()) {
             if (armorStack?.novaItem?.behaviors?.any { it in animatedBehaviors } == true) {
                 serverPlayer.inventoryMenu.setRemoteSlot(8 - armorSlot, ItemStack.EMPTY) // mark as dirty, force update
-                equipment[EquipmentSlot.entries[armorSlot + 2]] = armorStack
+                updatedEquipment[EquipmentSlot.entries[armorSlot + 2]] = armorStack.unwrap()
             }
-            
+        }
+        
+        if (updatedEquipment.isNotEmpty()) {
             // update for other players
-            val packet = ClientboundSetEquipmentPacket(player.entityId, equipment)
+            val packet = ClientboundSetEquipmentPacket(player.entityId, updatedEquipment)
             serverPlayer.serverLevel().chunkSource.broadcast(serverPlayer, packet)
         }
     }
@@ -87,20 +88,18 @@ internal object EquipmentAnimator {
     private fun updateNonPlayerArmor(entity: LivingEntity) {
         val equipment = entity.equipment ?: return
         
-        var updatedEquipment: HashMap<EquipmentSlot, ItemStack>? = null
+        val updatedEquipment = HashMap<EquipmentSlot, ItemStack>()
         for (slot in ARMOR_EQUIPMENT_SLOTS) {
             if (!entity.canUseEquipmentSlot(slot))
                 continue
             
             val itemStack = equipment.getItem(slot)
             if (itemStack.novaItem?.behaviors?.any { it in animatedBehaviors } == true) {
-                if (updatedEquipment == null)
-                    updatedEquipment = HashMap()
                 updatedEquipment[slot.nmsEquipmentSlot] = itemStack.unwrap()
             }
         }
         
-        if (updatedEquipment != null) {
+        if (updatedEquipment.isNotEmpty()) {
             val packet = ClientboundSetEquipmentPacket(entity.entityId, updatedEquipment)
             entity.world.serverLevel.chunkSource.broadcast(entity.nmsEntity, packet)
         }

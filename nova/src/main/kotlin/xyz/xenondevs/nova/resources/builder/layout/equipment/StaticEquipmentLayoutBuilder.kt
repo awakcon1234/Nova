@@ -6,7 +6,6 @@ import xyz.xenondevs.nova.resources.ResourceType
 import xyz.xenondevs.nova.resources.builder.ResourcePackBuilder
 import xyz.xenondevs.nova.resources.builder.data.EquipmentDefinition
 import java.awt.Color
-import java.lang.IllegalArgumentException
 
 @RegistryElementBuilderDsl
 class StaticEquipmentLayoutBuilder internal constructor(
@@ -153,16 +152,18 @@ class StaticEquipmentLayerBuilder<T : ResourceType.EquipmentTexture> internal co
      * Ues the emissivity map under `assets/<namespace>/textures/entity/equipment/<type>/<texture>.png`.
      * The emissivity map is used to determine the brightness of the layer.
      */
+    @Deprecated(EMISSIVITY_MAP_DEPRECATION)
     fun emissivityMap(emissivityMap: ResourcePath<T>) {
-        this.emissivityMap = emissivityMap
+//        this.emissivityMap = emissivityMap
     }
     
     /**
      * Ues the emissivity map under `textures/entity/equipment/<type>/<texture>.png`.
      * The emissivity map is used to determine the brightness of the layer.
      */
+    @Deprecated(EMISSIVITY_MAP_DEPRECATION)
     fun emissivityMap(emissivityMap: String) {
-        this.emissivityMap = ResourcePath.of(textureType, emissivityMap, namespace)
+//        this.emissivityMap = ResourcePath.of(textureType, emissivityMap, namespace)
     }
     
     /**

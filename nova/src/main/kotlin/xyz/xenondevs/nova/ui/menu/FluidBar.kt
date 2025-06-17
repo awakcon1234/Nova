@@ -34,7 +34,7 @@ private fun ItemBuilder.setFluidDisplayName(amount: Long, capacity: Long): ItemB
 /**
  * A multi-item gui component for displaying fluid levels.
  */
-class FluidBar @JvmOverloads constructor( // TODO: Remove @JvmOverloads in 0.19
+class FluidBar(
     height: Int,
     fluidHolder: FluidHolder,
     private val fluidContainer: NetworkedFluidContainer,
@@ -72,12 +72,12 @@ class FluidBar @JvmOverloads constructor( // TODO: Remove @JvmOverloads in 0.19
             ).setFluidDisplayName(amount, capacity)
         }.addClickHandler { _, click ->
             val player = click.player
-            val cursor = click.cursor.takeUnlessEmpty()
+            val cursor = player.itemOnCursor.takeUnlessEmpty()
             when (cursor?.type) {
                 Material.BUCKET -> if (allowedConnectionType.extract && fluidContainer.amount >= 1000) {
                     val bucket = fluidContainer.type!!.bucket
                     if (cursor.amount > 1) {
-                        click.cursor.amount -= 1
+                        cursor.amount -= 1
                         if (player.inventory.addItemCorrectly(bucket) != 0)
                             InventoryUtils.dropItemLikePlayer(player, bucket)
                     } else player.setItemOnCursor(bucket)

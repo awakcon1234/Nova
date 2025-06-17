@@ -5,9 +5,6 @@ import xyz.xenondevs.nova.addon.id
 import xyz.xenondevs.nova.config.PermanentStorage
 import java.nio.file.FileVisitResult
 import java.nio.file.Path
-import kotlin.collections.component1
-import kotlin.collections.component2
-import kotlin.collections.mapKeys
 import kotlin.io.path.CopyActionResult
 import kotlin.io.path.absolutePathString
 import kotlin.io.path.copyTo
@@ -26,7 +23,7 @@ import kotlin.io.path.relativeTo
 import kotlin.io.path.visitFileTree
 import kotlin.io.path.walk
 
-// TODO: Remove in 0.19
+// TODO: Remove in future version
 internal object LegacyDataFolderMigrator {
     
     private val PLUGINS_DIR = DATA_FOLDER.parent
@@ -94,7 +91,7 @@ internal object LegacyDataFolderMigrator {
                 }
         }
         
-        val storedConfigs: Map<String, String>? = PermanentStorage.retrieveOrNull("storedConfigs")
+        val storedConfigs: Map<String, String>? = PermanentStorage.retrieve("storedConfigs")
         if (storedConfigs != null) {
             // configs/<addon_id>/<config_name>.yml -> <addon_id>:<config_name>
             val newStoredConfigs = storedConfigs.mapKeys { (key, _) ->
@@ -112,8 +109,8 @@ internal object LegacyDataFolderMigrator {
     private fun migratePrefixedDataFiles(dir: String) {
         val legacyDir = DATA_FOLDER.resolve(dir)
         if (legacyDir.exists()) {
-            val oldUpdatableFiles: Map<String, String> = PermanentStorage.retrieve("updatableFileHashes", ::HashMap)
-            val newUpdatableFiles: MutableMap<String, String> = PermanentStorage.retrieve("updatable_file_hashes", ::HashMap)
+            val oldUpdatableFiles: Map<String, String> = PermanentStorage.retrieve("updatableFileHashes") ?: HashMap()
+            val newUpdatableFiles: MutableMap<String, String> = PermanentStorage.retrieve("updatable_file_hashes") ?: HashMap()
             legacyDir.walk()
                 .filter { it.isRegularFile() }
                 // file was extracted from addon, which means it starts with <addon_id>_
@@ -142,8 +139,8 @@ internal object LegacyDataFolderMigrator {
     private fun migrateWorldgen() {
         val data = DATA_FOLDER.resolve("data")
         if (data.exists()) {
-            val oldUpdatableFiles: Map<String, String> = PermanentStorage.retrieve("updatableFileHashes", ::HashMap)
-            val newUpdatableFiles: MutableMap<String, String> = PermanentStorage.retrieve("updatable_file_hashes", ::HashMap)
+            val oldUpdatableFiles: Map<String, String> = PermanentStorage.retrieve("updatableFileHashes") ?: HashMap()
+            val newUpdatableFiles: MutableMap<String, String> = PermanentStorage.retrieve("updatable_file_hashes") ?: HashMap()
             
             data.listDirectoryEntries().forEach { namespaceDir ->
                 val addonId = namespaceDir.name

@@ -31,7 +31,6 @@ import net.minecraft.world.level.levelgen.GenerationStep
 import net.minecraft.world.level.levelgen.carver.ConfiguredWorldCarver
 import net.minecraft.world.level.levelgen.placement.PlacedFeature
 import xyz.xenondevs.commons.collections.enumMap
-import xyz.xenondevs.nova.addon.registry.worldgen.BiomeRegistry
 import xyz.xenondevs.nova.registry.RegistryElementBuilder
 import xyz.xenondevs.nova.registry.RegistryElementBuilderDsl
 import xyz.xenondevs.nova.util.lookupGetterOrThrow
@@ -43,13 +42,11 @@ import xyz.xenondevs.nova.util.reflection.ReflectionRegistry.MOB_SPAWN_SETTINGS_
 import xyz.xenondevs.nova.world.generation.ExperimentalWorldGen
 import xyz.xenondevs.nova.world.generation.FeatureType
 import java.awt.Color
-import java.util.*
 
 /**
  * Builder for [Biomes][Biome].
  * Check out the [docs page](https://xenondevs.xyz/docs/nova/addon/worldgen/biome/) on biomes for more information.
  *
- * @see [BiomeRegistry]
  * @see [BiomeClimateSettingsBuilder]
  * @see [BiomeSpecialEffectsBuilder]
  * @see [MobSpawnSettingsBuilder]
@@ -552,17 +549,10 @@ class MobSpawnSettingsBuilder internal constructor() {
     
     /**
      * Adds a [SpawnerData] to the `spawners` setting of the biome's mob spawn settings by creating a new [SpawnerData]
-     * instance out of the given [entityType], [weight], [minGroupSize] and [maxGroupSize].
+     * instance out of the given [entityType], [minCount] and [maxCount].
      */
-    fun addSpawn(mobCategory: MobCategory, entityType: EntityType<*>, weight: Int, minGroupSize: Int, maxGroupSize: Int) =
-        addSpawn(mobCategory, SpawnerData(entityType, weight, minGroupSize, maxGroupSize))
-    
-    /**
-     * Adds a [SpawnerData] to the `spawners` setting of the biome's mob spawn settings by creating a new [SpawnerData]
-     * instance out of the given [entityType], [minGroupSize] and [maxGroupSize]. The `weight` is set to `1`.
-     */
-    fun addSpawn(mobCategory: MobCategory, entityType: EntityType<*>, minGroupSize: Int = 2, maxGroupSize: Int = 4) =
-        addSpawn(mobCategory, SpawnerData(entityType, 1, minGroupSize, maxGroupSize))
+    fun addSpawn(mobCategory: MobCategory, entityType: EntityType<*>, minCount: Int = 2, maxCount: Int = 4) =
+        addSpawn(mobCategory, SpawnerData(entityType, minCount, maxCount))
     
     /**
      * Sets the spawn cost for [entityType] to the given [spawnCost].

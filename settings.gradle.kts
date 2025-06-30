@@ -4,6 +4,7 @@ rootProject.name = "nova-parent"
 include("nova")
 include("nova-api")
 include("nova-gradle-plugin")
+include("nova-dokka-plugin")
 
 // hooks
 include("nova-hooks:nova-hook-griefprevention")
@@ -31,6 +32,7 @@ dependencyResolutionManagement {
 
 pluginManagement {
     repositories {
+        mavenLocal { content { includeGroupAndSubgroups("xyz.xenondevs") } }
         mavenCentral()
         gradlePluginPortal()
         maven("https://repo.xenondevs.xyz/releases/")
@@ -38,7 +40,7 @@ pluginManagement {
 }
 
 plugins {
-    id("com.gradle.enterprise") version("3.13")
+    id("com.gradle.enterprise") version "3.13"
 }
 
 gradleEnterprise {
